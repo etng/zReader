@@ -1,0 +1,40 @@
+.scroll {
+  overflow-y: scroll; }
+  .scroll::-webkit-scrollbar {
+    width: 6px; }
+  .scroll::-webkit-scrollbar-track {
+    border-radius: 0px;
+    background: rgba(0, 0, 0, 0.3); }
+  .scroll::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 1px; }
+
+.container .feed_list {
+  left: 0;
+  width: 16.66667%; }
+.container .article_list {
+  left: 16.66667%;
+  width: 16.66667%; }
+.container .article_detail {
+  left: 33.33333%;
+  width: 66.66667%; }
+.container .app-toolbar {
+  height: 48px; }
+  .container .app-toolbar .panel {
+    position: fixed;
+    top: 0;
+    height: 48px; }
+.container .app-content {
+  height: 98%;
+  height: -mox-calc(100% - 48px);
+  height: -o-calc(100% - 48px);
+  height: -webkit-calc(100% - 48px);
+  height: calc(100% - 48px); }
+  .container .app-content .panel {
+    position: fixed;
+    top: 48px;
+    height: 98%;
+    height: -mox-calc(100% - 48px);
+    height: -o-calc(100% - 48px);
+    height: -webkit-calc(100% - 48px);
+    height: calc(100% - 48px); }

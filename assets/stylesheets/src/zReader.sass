@@ -1,0 +1,94 @@
+@mixin calc($property, $variable, $operation, $value, $fallback)
+    #{$property}: $fallback //for browsers that don't support calc function
+    #{$property}: -mox-calc(#{$variable} #{$operation} #{$value})
+    #{$property}: -o-calc(#{$variable} #{$operation} #{$value})
+    #{$property}: -webkit-calc(#{$variable} #{$operation} #{$value})
+    #{$property}: calc(#{$variable} #{$operation} #{$value})
+$toolbar_height: 48px
+
+html
+    font-size: 100%
+    -webkit-text-size-adjust: 100%
+    -ms-text-size-adjust: 100%
+body
+    margin: 0
+
+html,body,.container
+    height: 100%
+    width: 100%
+    margin: 0px
+    padding: 0px
+    overflow: hidden
+
+article, aside, footer, header, hgroup, main, nav, section
+	display: block
+
+a:focus
+	outline: thin dotted
+a:hover,a:active
+	outline: 0
+h1,h2,h3,h4,h5,h6
+	margin: 0
+
+dl,menu,ol,ul
+	margin: 0
+
+menu,ol,ul
+	padding: 0
+	list-style: none
+	list-style-image: none
+
+.no-user-select
+	-webkit-touch-callout: none
+	-webkit-user-select: none
+	-khtml-user-select: none
+	-moz-user-select: none
+	-ms-user-select: none
+	user-select: none
+
+.allow-user-select
+	-webkit-touch-callout: text
+	-webkit-user-select: text
+	-khtml-user-select: text
+	-moz-user-select: text
+	-ms-user-select: text
+	user-select: text
+
+.hidden
+	display: none
+	visibility: hidden
+
+.scroll
+    overflow-y: scroll
+    &::-webkit-scrollbar
+        width: 6px
+    &::-webkit-scrollbar-track
+        border-radius: 0px
+        background: rgba(0, 0, 0, 0.3)
+    &::-webkit-scrollbar-thumb
+        background: rgba(0, 0, 0, 0.3)
+        border-radius: 1px
+.container
+    .feed_list
+        left: 0
+        width: (100% / 12) * 2
+    .article_list
+        left: (100% / 12) * 2
+        width: (100% / 12) * 2
+    .article_detail
+        left: (100% / 12) * 4
+        width: (100% / 12) * 8
+    .app-toolbar
+        height: $toolbar_height
+        .panel
+            position: fixed
+            top: 0
+            height: $toolbar_height
+    .app-content
+        @include calc(height, 100%, "-", $toolbar_height, 98%)
+        .panel
+            position: fixed
+            top: $toolbar_height
+            @include calc(height, 100%, "-", $toolbar_height, 98%)
+
+
