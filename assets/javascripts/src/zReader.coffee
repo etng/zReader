@@ -219,6 +219,8 @@ jQuery ->
                     "a": "state/starred"#when add mark status
                     "r": "state/starred"#when remove mark of status
                     "i": obj.id
+        toggle:(state)->
+            true
         isRead:->
             _.contains @get('categories'), @state_read
         isMarkAsRead:->
@@ -236,14 +238,14 @@ jQuery ->
         initialize: (items, options)->
             @page_size = options.page_size
             @continuation = options.continuation
-            @url == options.url
+            @stream == options.stream
             @loading = false
             @on 'article:current-change', (id)=>
                 @currentId = id
                 return
         getNext:(id)->
             index = -1
-            @forEach (article)->
+            @forEach (article,i)->
                 if article.get('id')==id
                     index = i+1
                     return false
@@ -251,15 +253,18 @@ jQuery ->
             return null if index<0
             if index==@length-1
                 @loadMore()
+            console.log  index
             @at index
+
         getPrev:(id)->
             index = -1
-            @forEach (article)->
+            @forEach (article,i)->
                 if article.get('id')==id
                     index = i-1
                     return false
                 return
             return null if index<0
+            console.log  index
             @at index
         loadMore:(onload)->
             @loading = true
@@ -560,26 +565,26 @@ jQuery ->
         itemView: LabelView
         setCurrent: (url)->
             # 设置焦点
-            App.labelsView.$el.find ('li.current').removeClass ('current')
-            App.labelsView.$el.find ('li[data-id="' + url + '"]').addClass ('current')
+            App.labelsView.$el.find('li.current').removeClass 'current'
+            App.labelsView.$el.find('li[data-id="' + url + '"]').addClass 'current'
             return
     ArticleView = Backbone.Marionette.ItemView.extend
-        template: 'article-template'
+        template: '#article-template'
         initialize:->
         templateHelpers:
             prettyDate: (time)->
                 _.prettyDate time
             getContent:->
                 if @content && @content.content
-                    @content.content
+                    return @content.content
                 if @summary && @summary.content
-                    @summary.content
+                    return @summary.content
                 ""
             getItemClass:->
                 klasses=[]
-                klasses.push 'read' if _.contains(categories, 'state/read')
-                klasses.push 'starred' if _.contains(categories, 'state/starred')
-                klasses.push 'markasread' if _.contains(categories, 'state/markasread')
+                klasses.push 'read' if _.contains(@categories, 'state/read')
+                klasses.push 'starred' if _.contains(@categories, 'state/starred')
+                klasses.push 'markasread' if _.contains(@categories, 'state/markasread')
                 klasses.join ' '
         events:
             'click div.article-origin': 'originClicked'
@@ -608,9 +613,7 @@ jQuery ->
                     return
             else
                 @buildLabels()
-            @loadItems();
-            unless @cached_items.length
-                @getItemsRemote()
+            @loadItems()
             return
         buildLabels: ()->
             @lables = new LabelList()
@@ -672,52 +675,52 @@ jQuery ->
             localStorage.getItem('storage-stream-id') or _.first(@valid_filters)
         getCachedItems:(collection)->
             return [] unless collection
-            streamId = collection.url
-            if streamId.indexOf('stream/')==0
-                streamId = streamId.substring('stream/'.length)
+            streamId = collection.stream
             filter = @getStreamFilter()
             cached_items = []
             t = parseInt $.now()/1000
             if collection.length
                 t = collection.last().get 'updated'
-            for i,cated_item of @cached_items
+            @cached_items.each (cached_item)->
                 if cached_item.get('updated')>t
-                    continue
+                    return
                 categories = cached_item.get 'categories'
                 if streamId.indexOf('lable/')==0 && not _.contains(categories, streamId)
-                    continue
+                    return
                 if streamId.indexOf('feed/')==0 && cached_item.get('origin')!= streamId
-                    continue
+                    return
                 if streamId.indexOf('state/')==0
                     if streamId=='state/unread' and (cached_item.isRead() or cached_item.isMarkAsRead())
-                        continue
+                        return
                     if streamId=='state/starred' && not cached_item.isStarred()
-                        continue
+                        return
                 if filter=='state/unread' and (cached_item.isRead() or cached_item.isMarkAsRead())
-                    continue
+                    return
                 if filter=='state/starred' && not cached_item.isStarred()
-                    continue
+                    return
                 cached_items.push _.pick(cached_item, 'id', 'updated')
+                return
+            , @
             cached_items.sort (a, b)->
                 b.updated - a.updated
             _.head cached_items, collection.page_size*2
         getItemsRemote:(collection, callback)->
-            if collection
-                url = '/reader/api/0/stream/contents/' + collection.url.substring ('stream/'.length)
-                qsa = []
-                qsa.push ['n', collection.page_size]
-                qsa.push ['ck', $.now()]
-                if collection.continuation
-                    qsa.push ['c', collection.continuation]
-                filter = this.getStreamFilter()
-                if filter && filter !=_.first(@valid_filters)
-                    qsa.push ['filter', filter]
-                qs = []
-                for p in qsa
-                    qs.push "#{p[0]}=#{p[1]}"
-                url+= '?' + qs.join('&')
-            else
-                url = "var/data/reader_items.json"
+            qsa = []
+            url = '/reader/api/0/stream/contents/' + collection.stream
+            url = "var/data/reader_items.json"
+            qsa.push ['stream', collection.stream]
+
+            qsa.push ['n', collection.page_size]
+            qsa.push ['ck', $.now()]
+            if collection.continuation
+                qsa.push ['c', collection.continuation]
+            filter = this.getStreamFilter()
+            if filter && filter !=_.first(@valid_filters)
+                qsa.push ['filter', filter]
+            qs = []
+            for p in qsa
+                qs.push "#{p[0]}=#{p[1]}"
+            url+= '?' + qs.join('&')
             $.ajax
                 url: url
                 type: 'POST'
@@ -749,6 +752,8 @@ jQuery ->
                                 article.set {categories}
                 collection.continuation = data.continuation if collection
                 @saveItems() if itemsAreChanged
+                console.log @cached_items
+                return
         loadSubscriptionsRemote:(callback)->
             $.ajax
                 #url: "/reader/api/0/subscription/list?ck=#{$.now()}"
@@ -765,11 +770,13 @@ jQuery ->
         loadSubscriptions:->
             @feeds.reset JSON.parse localStorage.getItem 'subscriptions'
         loadItems:->
-            @cached_items.reset JSON.parse localStorage.getItem 'items'
+            @cached_items.reset JSON.parse localStorage.getItem 'item'
         saveSubscriptions:->
             localStorage.removeItem 'subscriptions'
             localStorage.setItem 'subscriptions', JSON.stringify(@feeds.toJSON())
             return
+        getItem: (id)->
+            @cached_items.get id
         saveItems:->
             localStorage.removeItem 'item'
             items = @cached_items.toJSON()
@@ -805,12 +812,11 @@ jQuery ->
         itemView:(id)->
             App.vent.trigger 'article:change', id
             return
-        streamView:(query)->
-            url = 'stream/' + encodeURIComponent(query)
-            if App.indexList.url == url
+        streamView:(stream)->
+            if App.indexList.stream == stream
                 App.indexList.trigger 'article:current-change', App.indexList.currentId
                 return
-            App.vent.trigger 'stream:reset', url
+            App.vent.trigger 'stream:reset', stream
             return
         back:->
             if @routesHit
@@ -829,6 +835,40 @@ jQuery ->
         mutes_label_id:'***MUTES***'
         _:(msg_id)->
             msg_id
+    App.hot_keys =
+        'k':
+            'desc': '向上滚动'
+            'alias': 'left'
+            'handler': ()->
+                App.vent.trigger 'article:next', App.articleView.model.id
+                false
+        'j':
+            'desc': '向下滚动'
+            'alias': 'right'
+            'handler': ()->
+                App.vent.trigger 'article:prev', App.articleView.model.id
+                false
+        'f1':
+            name: 'F1/?'
+            alias: 'shit+/'
+            'desc': '获取本帮助'
+            'handler': ()->
+                App.vent.trigger 'help:shortcuts'
+                false
+        's':
+            'desc': '标记喜欢/不喜欢'
+            'handler':()->
+                App.articleView.model.toggle 'star'
+                false
+        'a':
+            'desc': '标记已读/未读'
+            'handler':()->
+                App.articleView.model.toggle 'markasread'
+                false
+        '/':
+            'desc': '搜索'
+            'handler': ()->
+                false
     App.addInitializer (options)->
         App.router = new AppRouter()
         App.storage = new AppStorage()
@@ -841,7 +881,7 @@ jQuery ->
         App.labelsView.render()
 
         App.indexList = new ArticleList [],
-            url: "stream/" + encodeURIComponent(streamId)
+            stream: streamId
             page_size: 20
             continuation: ''
         App.indexView = new IndexListView
@@ -854,8 +894,64 @@ jQuery ->
         App.storage.setStreamFilter streamFilter
         App.indexView.setStreamFilter streamFilter
         App.vent.trigger 'stream:reset'
-
+        App.vent.on 'stream:reset', (stream)->
+            if stream
+                App.indexList.stream = stream
+            App.indexList.continuation = null
+            App.indexList.reset()
+            App.indexView.scrollTop 0
+            # 加载数据
+            App.indexList.loadMore ()->
+                if App.indexList.length > 0
+                    App.vent.trigger 'article:change', App.indexList.at(0).id
+                    return
+            App.labelsView.setCurrent 'stream/'+(App.indexList.url)
+            return
+        App.vent.on 'article:change', (id)->
+            console.log id
+            newArticle = App.storage.getItem id
+            console.log newArticle
+            App.articleView = new ArticleView
+                el: '#article-view'
+                model: newArticle
+                'scroller': '.app-view section.wrapper3'
+            App.articleView.render()
+            App.indexList.trigger 'article:current-change', id
+            # 修改标题
+            document.title = newArticle.get 'title'
+            return
+        App.vent.on 'article:prev', (id)->
+            return unless App.indexList
+            article = App.indexList.getPrev id
+            if article
+                url = "#item/#{article.get('id')}"
+                App.router.navigate url,
+                    trigger: true
+                    replace: true
+            return
+        App.vent.on 'article:next',  (id)->
+            return unless App.indexList
+            article = App.indexList.getNext id
+            if article
+                url = "#item/#{article.get('id')}"
+                App.router.navigate url,
+                    trigger: true
+                    replace: true
+            return
         Backbone.history.start()
+        return
+    App.vent.on 'help:shortcuts', ()->
+        console.log 'hotkeys config:', App.hot_keys
+        return
+    App.addInitializer (options)->
+        _.each App.hot_keys, (key, key_config)->
+            console.log key
+            $(document).bind 'keydown', key, key_config.handler
+            if key_config.alias
+                console.log key_config.alias.split ' '
+                for alias_key in key_config.alias.split ' '
+                    $(document).bind 'keydown', alias_key, key_config.handler
+            return
         return
     App.start()
     return

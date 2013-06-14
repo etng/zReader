@@ -334,6 +334,9 @@ jQuery(function() {
         }
       });
     },
+    toggle: function(state) {
+      return true;
+    },
     isRead: function() {
       return _.contains(this.get('categories'), this.state_read);
     },
@@ -366,7 +369,7 @@ jQuery(function() {
 
       this.page_size = options.page_size;
       this.continuation = options.continuation;
-      this.url === options.url;
+      this.stream === options.stream;
       this.loading = false;
       return this.on('article:current-change', function(id) {
         _this.currentId = id;
@@ -376,7 +379,7 @@ jQuery(function() {
       var index;
 
       index = -1;
-      this.forEach(function(article) {
+      this.forEach(function(article, i) {
         if (article.get('id') === id) {
           index = i + 1;
           return false;
@@ -388,13 +391,14 @@ jQuery(function() {
       if (index === this.length - 1) {
         this.loadMore();
       }
+      console.log(index);
       return this.at(index);
     },
     getPrev: function(id) {
       var index;
 
       index = -1;
-      this.forEach(function(article) {
+      this.forEach(function(article, i) {
         if (article.get('id') === id) {
           index = i - 1;
           return false;
@@ -403,6 +407,7 @@ jQuery(function() {
       if (index < 0) {
         return null;
       }
+      console.log(index);
       return this.at(index);
     },
     loadMore: function(onload) {
@@ -820,12 +825,12 @@ jQuery(function() {
   LabelsView = Backbone.Marionette.CollectionView.extend({
     itemView: LabelView,
     setCurrent: function(url) {
-      App.labelsView.$el.find('li.current'.removeClass('current'));
-      App.labelsView.$el.find(('li[data-id="' + url + '"]').addClass('current'));
+      App.labelsView.$el.find('li.current').removeClass('current');
+      App.labelsView.$el.find('li[data-id="' + url + '"]').addClass('current');
     }
   });
   ArticleView = Backbone.Marionette.ItemView.extend({
-    template: 'article-template',
+    template: '#article-template',
     initialize: function() {},
     templateHelpers: {
       prettyDate: function(time) {
@@ -833,10 +838,10 @@ jQuery(function() {
       },
       getContent: function() {
         if (this.content && this.content.content) {
-          this.content.content;
+          return this.content.content;
         }
         if (this.summary && this.summary.content) {
-          this.summary.content;
+          return this.summary.content;
         }
         return "";
       },
@@ -844,13 +849,13 @@ jQuery(function() {
         var klasses;
 
         klasses = [];
-        if (_.contains(categories, 'state/read')) {
+        if (_.contains(this.categories, 'state/read')) {
           klasses.push('read');
         }
-        if (_.contains(categories, 'state/starred')) {
+        if (_.contains(this.categories, 'state/starred')) {
           klasses.push('starred');
         }
-        if (_.contains(categories, 'state/markasread')) {
+        if (_.contains(this.categories, 'state/markasread')) {
           klasses.push('markasread');
         }
         return klasses.join(' ');
@@ -889,9 +894,6 @@ jQuery(function() {
         this.buildLabels();
       }
       this.loadItems();
-      if (!this.cached_items.length) {
-        this.getItemsRemote();
-      }
     },
     buildLabels: function() {
       var _this = this;
@@ -974,50 +976,47 @@ jQuery(function() {
       return localStorage.getItem('storage-stream-id') || _.first(this.valid_filters);
     },
     getCachedItems: function(collection) {
-      var cached_items, cated_item, categories, filter, i, streamId, t, _ref;
+      var cached_items, filter, streamId, t;
 
       if (!collection) {
         return [];
       }
-      streamId = collection.url;
-      if (streamId.indexOf('stream/') === 0) {
-        streamId = streamId.substring('stream/'.length);
-      }
+      streamId = collection.stream;
       filter = this.getStreamFilter();
       cached_items = [];
       t = parseInt($.now() / 1000);
       if (collection.length) {
         t = collection.last().get('updated');
       }
-      _ref = this.cached_items;
-      for (i in _ref) {
-        cated_item = _ref[i];
+      this.cached_items.each(function(cached_item) {
+        var categories;
+
         if (cached_item.get('updated') > t) {
-          continue;
+          return;
         }
         categories = cached_item.get('categories');
         if (streamId.indexOf('lable/') === 0 && !_.contains(categories, streamId)) {
-          continue;
+          return;
         }
         if (streamId.indexOf('feed/') === 0 && cached_item.get('origin') !== streamId) {
-          continue;
+          return;
         }
         if (streamId.indexOf('state/') === 0) {
           if (streamId === 'state/unread' && (cached_item.isRead() || cached_item.isMarkAsRead())) {
-            continue;
+            return;
           }
           if (streamId === 'state/starred' && !cached_item.isStarred()) {
-            continue;
+            return;
           }
         }
         if (filter === 'state/unread' && (cached_item.isRead() || cached_item.isMarkAsRead())) {
-          continue;
+          return;
         }
         if (filter === 'state/starred' && !cached_item.isStarred()) {
-          continue;
+          return;
         }
         cached_items.push(_.pick(cached_item, 'id', 'updated'));
-      }
+      }, this);
       cached_items.sort(function(a, b) {
         return b.updated - a.updated;
       });
@@ -1027,27 +1026,25 @@ jQuery(function() {
       var filter, p, qs, qsa, url, _i, _len,
         _this = this;
 
-      if (collection) {
-        url = '/reader/api/0/stream/contents/' + collection.url.substring('stream/'.length);
-        qsa = [];
-        qsa.push(['n', collection.page_size]);
-        qsa.push(['ck', $.now()]);
-        if (collection.continuation) {
-          qsa.push(['c', collection.continuation]);
-        }
-        filter = this.getStreamFilter();
-        if (filter && filter !== _.first(this.valid_filters)) {
-          qsa.push(['filter', filter]);
-        }
-        qs = [];
-        for (_i = 0, _len = qsa.length; _i < _len; _i++) {
-          p = qsa[_i];
-          qs.push("" + p[0] + "=" + p[1]);
-        }
-        url += '?' + qs.join('&');
-      } else {
-        url = "var/data/reader_items.json";
+      qsa = [];
+      url = '/reader/api/0/stream/contents/' + collection.stream;
+      url = "var/data/reader_items.json";
+      qsa.push(['stream', collection.stream]);
+      qsa.push(['n', collection.page_size]);
+      qsa.push(['ck', $.now()]);
+      if (collection.continuation) {
+        qsa.push(['c', collection.continuation]);
       }
+      filter = this.getStreamFilter();
+      if (filter && filter !== _.first(this.valid_filters)) {
+        qsa.push(['filter', filter]);
+      }
+      qs = [];
+      for (_i = 0, _len = qsa.length; _i < _len; _i++) {
+        p = qsa[_i];
+        qs.push("" + p[0] + "=" + p[1]);
+      }
+      url += '?' + qs.join('&');
       return $.ajax({
         url: url,
         type: 'POST',
@@ -1094,8 +1091,9 @@ jQuery(function() {
           collection.continuation = data.continuation;
         }
         if (itemsAreChanged) {
-          return _this.saveItems();
+          _this.saveItems();
         }
+        console.log(_this.cached_items);
       });
     },
     loadSubscriptionsRemote: function(callback) {
@@ -1116,11 +1114,14 @@ jQuery(function() {
       return this.feeds.reset(JSON.parse(localStorage.getItem('subscriptions')));
     },
     loadItems: function() {
-      return this.cached_items.reset(JSON.parse(localStorage.getItem('items')));
+      return this.cached_items.reset(JSON.parse(localStorage.getItem('item')));
     },
     saveSubscriptions: function() {
       localStorage.removeItem('subscriptions');
       localStorage.setItem('subscriptions', JSON.stringify(this.feeds.toJSON()));
+    },
+    getItem: function(id) {
+      return this.cached_items.get(id);
     },
     saveItems: function() {
       var items, max_cache_items;
@@ -1165,15 +1166,12 @@ jQuery(function() {
     itemView: function(id) {
       App.vent.trigger('article:change', id);
     },
-    streamView: function(query) {
-      var url;
-
-      url = 'stream/' + encodeURIComponent(query);
-      if (App.indexList.url === url) {
+    streamView: function(stream) {
+      if (App.indexList.stream === stream) {
         App.indexList.trigger('article:current-change', App.indexList.currentId);
         return;
       }
-      App.vent.trigger('stream:reset', url);
+      App.vent.trigger('stream:reset', stream);
     },
     back: function() {
       if (this.routesHit) {
@@ -1198,6 +1196,53 @@ jQuery(function() {
       return msg_id;
     }
   });
+  App.hot_keys = {
+    'k': {
+      'desc': '向上滚动',
+      'alias': 'left',
+      'handler': function() {
+        App.vent.trigger('article:next', App.articleView.model.id);
+        return false;
+      }
+    },
+    'j': {
+      'desc': '向下滚动',
+      'alias': 'right',
+      'handler': function() {
+        App.vent.trigger('article:prev', App.articleView.model.id);
+        return false;
+      }
+    },
+    'f1': {
+      name: 'F1/?',
+      alias: 'shit+/',
+      'desc': '获取本帮助',
+      'handler': function() {
+        App.vent.trigger('help:shortcuts');
+        return false;
+      }
+    },
+    's': {
+      'desc': '标记喜欢/不喜欢',
+      'handler': function() {
+        App.articleView.model.toggle('star');
+        return false;
+      }
+    },
+    'a': {
+      'desc': '标记已读/未读',
+      'handler': function() {
+        App.articleView.model.toggle('markasread');
+        return false;
+      }
+    },
+    '/': {
+      'desc': '搜索',
+      'handler': function() {
+        return false;
+      }
+    }
+  };
   App.addInitializer(function(options) {
     var streamFilter, streamId;
 
@@ -1211,7 +1256,7 @@ jQuery(function() {
     });
     App.labelsView.render();
     App.indexList = new ArticleList([], {
-      url: "stream/" + encodeURIComponent(streamId),
+      stream: streamId,
       page_size: 20,
       continuation: ''
     });
@@ -1225,7 +1270,85 @@ jQuery(function() {
     App.storage.setStreamFilter(streamFilter);
     App.indexView.setStreamFilter(streamFilter);
     App.vent.trigger('stream:reset');
+    App.vent.on('stream:reset', function(stream) {
+      if (stream) {
+        App.indexList.stream = stream;
+      }
+      App.indexList.continuation = null;
+      App.indexList.reset();
+      App.indexView.scrollTop(0);
+      App.indexList.loadMore(function() {
+        if (App.indexList.length > 0) {
+          App.vent.trigger('article:change', App.indexList.at(0).id);
+        }
+      });
+      App.labelsView.setCurrent('stream/' + App.indexList.url);
+    });
+    App.vent.on('article:change', function(id) {
+      var newArticle;
+
+      console.log(id);
+      newArticle = App.storage.getItem(id);
+      console.log(newArticle);
+      App.articleView = new ArticleView({
+        el: '#article-view',
+        model: newArticle,
+        'scroller': '.app-view section.wrapper3'
+      });
+      App.articleView.render();
+      App.indexList.trigger('article:current-change', id);
+      document.title = newArticle.get('title');
+    });
+    App.vent.on('article:prev', function(id) {
+      var article, url;
+
+      if (!App.indexList) {
+        return;
+      }
+      article = App.indexList.getPrev(id);
+      if (article) {
+        url = "#item/" + (article.get('id'));
+        App.router.navigate(url, {
+          trigger: true,
+          replace: true
+        });
+      }
+    });
+    App.vent.on('article:next', function(id) {
+      var article, url;
+
+      if (!App.indexList) {
+        return;
+      }
+      article = App.indexList.getNext(id);
+      if (article) {
+        url = "#item/" + (article.get('id'));
+        App.router.navigate(url, {
+          trigger: true,
+          replace: true
+        });
+      }
+    });
     Backbone.history.start();
+  });
+  App.vent.on('help:shortcuts', function() {
+    console.log('hotkeys config:', App.hot_keys);
+  });
+  App.addInitializer(function(options) {
+    _.each(App.hot_keys, function(key, key_config) {
+      var alias_key, _i, _len, _ref;
+
+      console.log(key);
+      $(document).bind('keydown', key, key_config.handler);
+      if (key_config.alias) {
+        console.log(key_config.alias.split(' '));
+        _ref = key_config.alias.split(' ');
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          alias_key = _ref[_i];
+          $(document).bind('keydown', alias_key, key_config.handler);
+        }
+      }
+    });
   });
   App.start();
 });
