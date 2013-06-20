@@ -238,7 +238,7 @@ jQuery ->
         initialize: (items, options)->
             @page_size = options.page_size
             @continuation = options.continuation
-            @stream == options.stream
+            @stream = options.stream
             @loading = false
             @on 'article:current-change', (id)=>
                 @currentId = id
@@ -253,7 +253,6 @@ jQuery ->
             return null if index<0
             if index==@length-1
                 @loadMore()
-            console.log  index
             @at index
 
         getPrev:(id)->
@@ -264,7 +263,6 @@ jQuery ->
                     return false
                 return
             return null if index<0
-            console.log  index
             @at index
         loadMore:(onload)->
             @loading = true
@@ -374,6 +372,7 @@ jQuery ->
     IndexListView = Backbone.Marionette.CollectionView.extend
         initialize : ()->
             @loading = false
+            scroller = @$el.parent()
             @collection.on 'article:current-change', (id)=>
                 return unless id
                 itemId = id
@@ -383,7 +382,7 @@ jQuery ->
                 item = item.parent()
                 return unless item
 
-                scroller = $(@options.scroller)
+                scroller = @$el.parent()
                 return unless scroller
                 scrollTop = scroller.scrollTop()
                 outerHeight = scroller.outerHeight()
@@ -391,7 +390,7 @@ jQuery ->
 
                 return unless item.offset()
 
-                that.$el.find('.index-item.current').removeClass('current')
+                @$el.find('.index-item.current').removeClass('current')
                 item.addClass('current')
 
                 itemTop = scrollTop + item.offset().top
@@ -400,35 +399,33 @@ jQuery ->
                     return
 
                 totalHeight = scroller.get(0).scrollHeight
-                cy = itemTop +(itemHeight/2)
+                cy = itemTop + (itemHeight/2)
                 sy = parseInt(cy - outerHeight/3 - scroller.offset().top)
 
                 sy = Math.max(0, Math.min(sy, totalHeight-outerHeight))
 
                 scroller.animate {scrollTop: sy}
             #
-            if @options && @options.scroller
-                scroller = $(this.options.scroller)
-                scroller && scroller.bindWithDelay "scroll", (event)=>
-                    return if @collection.isLoading()
+            scroller.bindWithDelay "scroll", (event)=>
+                return if @collection.isLoading()
 
-                    outerHeight = scroller.outerHeight()
-                    totalHeight = scroller.get(0).scrollHeight
-                    scrollTop = scroller.scrollTop()
+                outerHeight = scroller.outerHeight()
+                totalHeight = scroller.get(0).scrollHeight
+                scrollTop = scroller.scrollTop()
 
-                    if(totalHeight -(scrollTop + outerHeight) < outerHeight)
-                        # 显示一个等待信息
-                        @collection.getMore ()->
-                            # 关闭等待信息
-                            return
-                , 100
+                if(totalHeight -(scrollTop + outerHeight) < outerHeight)
+                    # 显示一个等待信息
+                    @collection.getMore ()->
+                        # 关闭等待信息
+                        return
+            , 100
 
-                # 加入延迟绑定事件，用于处理自动标记为已读
-                # 当前位置之上的都标记为已读
-                scroller && scroller.bindWithDelay "scroll", (event)->
-                    console.log 'scroll delay'
-                    return
-                , 1000
+            # 加入延迟绑定事件，用于处理自动标记为已读
+            # 当前位置之上的都标记为已读
+            scroller && scroller.bindWithDelay "scroll", (event)->
+                console.log 'scroll delay'
+                return
+            , 1000
             return
 
         setStreamFilter: (name)->
@@ -616,7 +613,7 @@ jQuery ->
             @loadItems()
             return
         buildLabels: ()->
-            @lables = new LabelList()
+            @labels = new LabelList()
             @allLabel = new Label
                 'id':App.all_label_id
                 'title': 'All'
@@ -676,6 +673,8 @@ jQuery ->
         getCachedItems:(collection)->
             return [] unless collection
             streamId = collection.stream
+            unless streamId
+               throw "streamId can not be null"
             filter = @getStreamFilter()
             cached_items = []
             t = parseInt $.now()/1000
@@ -685,7 +684,7 @@ jQuery ->
                 if cached_item.get('updated')>t
                     return
                 categories = cached_item.get 'categories'
-                if streamId.indexOf('lable/')==0 && not _.contains(categories, streamId)
+                if streamId.indexOf('label/')==0 && not _.contains(categories, streamId)
                     return
                 if streamId.indexOf('feed/')==0 && cached_item.get('origin')!= streamId
                     return
@@ -732,7 +731,6 @@ jQuery ->
                     items: @getCachedItems collection
             .done (data)=>
                 itemsAreChanged = false
-                console.log data
                 for i, attributes of data
                     unless attributes.cached
                         article = new Article attributes
@@ -752,7 +750,7 @@ jQuery ->
                                 article.set {categories}
                 collection.continuation = data.continuation if collection
                 @saveItems() if itemsAreChanged
-                console.log @cached_items
+                callback and callback()
                 return
         loadSubscriptionsRemote:(callback)->
             $.ajax
@@ -780,7 +778,6 @@ jQuery ->
         saveItems:->
             localStorage.removeItem 'item'
             items = @cached_items.toJSON()
-            console.log items
             max_cache_items = 100
             if items.length>max_cache_items
                 items.sort (a,b)->
@@ -846,6 +843,7 @@ jQuery ->
             'desc': '向下滚动'
             'alias': 'right'
             'handler': ()->
+                console.log 'j pressed'
                 App.vent.trigger 'article:prev', App.articleView.model.id
                 false
         'f1':
@@ -879,7 +877,6 @@ jQuery ->
             el: '#label-view'
             collection: App.storage.getLabels()
         App.labelsView.render()
-
         App.indexList = new ArticleList [],
             stream: streamId
             page_size: 20
@@ -888,12 +885,11 @@ jQuery ->
             el: "#index-view"
             itemView: IndexItemView
             collection: App.indexList
-            'scroller': '.app-view aside.wrapper2'
         App.indexView.render()
 
         App.storage.setStreamFilter streamFilter
         App.indexView.setStreamFilter streamFilter
-        App.vent.trigger 'stream:reset'
+
         App.vent.on 'stream:reset', (stream)->
             if stream
                 App.indexList.stream = stream
@@ -907,10 +903,9 @@ jQuery ->
                     return
             App.labelsView.setCurrent 'stream/'+(App.indexList.url)
             return
+        App.vent.trigger 'stream:reset'
         App.vent.on 'article:change', (id)->
-            console.log id
             newArticle = App.storage.getItem id
-            console.log newArticle
             App.articleView = new ArticleView
                 el: '#article-view'
                 model: newArticle
@@ -921,6 +916,7 @@ jQuery ->
             document.title = newArticle.get 'title'
             return
         App.vent.on 'article:prev', (id)->
+            id = App.articleView.model.id unless id
             return unless App.indexList
             article = App.indexList.getPrev id
             if article
@@ -928,29 +924,52 @@ jQuery ->
                 App.router.navigate url,
                     trigger: true
                     replace: true
+            else
+                console.log "this is the first article"
             return
         App.vent.on 'article:next',  (id)->
             return unless App.indexList
+            id = App.articleView.model.id unless id
             article = App.indexList.getNext id
             if article
                 url = "#item/#{article.get('id')}"
                 App.router.navigate url,
                     trigger: true
                     replace: true
+            else
+                console.log "this is the last article"
             return
         Backbone.history.start()
         return
     App.vent.on 'help:shortcuts', ()->
-        console.log 'hotkeys config:', App.hot_keys
         return
     App.addInitializer (options)->
-        _.each App.hot_keys, (key, key_config)->
-            console.log key
+        for key, key_config of App.hot_keys
+            console.log key, key_config.handler
             $(document).bind 'keydown', key, key_config.handler
             if key_config.alias
-                console.log key_config.alias.split ' '
                 for alias_key in key_config.alias.split ' '
                     $(document).bind 'keydown', alias_key, key_config.handler
+        return
+    App.addInitializer (options)->
+        $('.app-toolbar .article_list.panel').delegate 'button.btn', 'click', ->
+            $btn = $(this)
+            current_collection = ''
+            if $btn.hasClass 'mark'
+                current_collection.mark 'read'
+            else if $btn.hasClass 'filter'
+                for state in ['all', 'read', 'starred']
+                    current_collection.filter state if $btn.hasClass state
+            return
+        $('.app-toolbar .article_detail.panel').delegate 'button.btn', 'click', ->
+            $btn = $(this)
+            current_article_view = ''
+            if $btn.hasClass 'toggle'
+              for state in ['read', 'star']
+                current_article_view.toggle state if $btn.hasClass state
+            else if $btn.hasClass 'goto'
+                for state in ['refresh', 'next', 'prev']
+                    App.vent.trigger "article:#{state}" if $btn.hasClass state
             return
         return
     App.start()

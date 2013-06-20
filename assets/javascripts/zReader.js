@@ -369,7 +369,7 @@ jQuery(function() {
 
       this.page_size = options.page_size;
       this.continuation = options.continuation;
-      this.stream === options.stream;
+      this.stream = options.stream;
       this.loading = false;
       return this.on('article:current-change', function(id) {
         _this.currentId = id;
@@ -391,7 +391,6 @@ jQuery(function() {
       if (index === this.length - 1) {
         this.loadMore();
       }
-      console.log(index);
       return this.at(index);
     },
     getPrev: function(id) {
@@ -407,7 +406,6 @@ jQuery(function() {
       if (index < 0) {
         return null;
       }
-      console.log(index);
       return this.at(index);
     },
     loadMore: function(onload) {
@@ -573,8 +571,9 @@ jQuery(function() {
         _this = this;
 
       this.loading = false;
+      scroller = this.$el.parent();
       this.collection.on('article:current-change', function(id) {
-        var cy, item, itemHeight, itemId, itemTop, outerHeight, scrollTop, scroller, sy, totalHeight;
+        var cy, item, itemHeight, itemId, itemTop, outerHeight, scrollTop, sy, totalHeight;
 
         if (!id) {
           return;
@@ -588,7 +587,7 @@ jQuery(function() {
         if (!item) {
           return;
         }
-        scroller = $(_this.options.scroller);
+        scroller = _this.$el.parent();
         if (!scroller) {
           return;
         }
@@ -600,7 +599,7 @@ jQuery(function() {
         if (!item.offset()) {
           return;
         }
-        that.$el.find('.index-item.current').removeClass('current');
+        _this.$el.find('.index-item.current').removeClass('current');
         item.addClass('current');
         itemTop = scrollTop + item.offset().top;
         itemHeight = item.height();
@@ -608,32 +607,29 @@ jQuery(function() {
           return;
         }
         totalHeight = scroller.get(0).scrollHeight;
-        cy = itemTop(+(itemHeight / 2));
+        cy = itemTop + (itemHeight / 2);
         sy = parseInt(cy - outerHeight / 3 - scroller.offset().top);
         sy = Math.max(0, Math.min(sy, totalHeight - outerHeight));
         return scroller.animate({
           scrollTop: sy
         });
       });
-      if (this.options && this.options.scroller) {
-        scroller = $(this.options.scroller);
-        scroller && scroller.bindWithDelay("scroll", function(event) {
-          var outerHeight, scrollTop, totalHeight;
+      scroller.bindWithDelay("scroll", function(event) {
+        var outerHeight, scrollTop, totalHeight;
 
-          if (_this.collection.isLoading()) {
-            return;
-          }
-          outerHeight = scroller.outerHeight();
-          totalHeight = scroller.get(0).scrollHeight;
-          scrollTop = scroller.scrollTop();
-          if (totalHeight(-(scrollTop + outerHeight) < outerHeight)) {
-            return _this.collection.getMore(function() {});
-          }
-        }, 100);
-        scroller && scroller.bindWithDelay("scroll", function(event) {
-          console.log('scroll delay');
-        }, 1000);
-      }
+        if (_this.collection.isLoading()) {
+          return;
+        }
+        outerHeight = scroller.outerHeight();
+        totalHeight = scroller.get(0).scrollHeight;
+        scrollTop = scroller.scrollTop();
+        if (totalHeight(-(scrollTop + outerHeight) < outerHeight)) {
+          return _this.collection.getMore(function() {});
+        }
+      }, 100);
+      scroller && scroller.bindWithDelay("scroll", function(event) {
+        console.log('scroll delay');
+      }, 1000);
     },
     setStreamFilter: function(name) {
       $('#filter-all').removeClass('active');
@@ -898,7 +894,7 @@ jQuery(function() {
     buildLabels: function() {
       var _this = this;
 
-      this.lables = new LabelList();
+      this.labels = new LabelList();
       this.allLabel = new Label({
         'id': App.all_label_id,
         'title': 'All',
@@ -982,6 +978,9 @@ jQuery(function() {
         return [];
       }
       streamId = collection.stream;
+      if (!streamId) {
+        throw "streamId can not be null";
+      }
       filter = this.getStreamFilter();
       cached_items = [];
       t = parseInt($.now() / 1000);
@@ -995,7 +994,7 @@ jQuery(function() {
           return;
         }
         categories = cached_item.get('categories');
-        if (streamId.indexOf('lable/') === 0 && !_.contains(categories, streamId)) {
+        if (streamId.indexOf('label/') === 0 && !_.contains(categories, streamId)) {
           return;
         }
         if (streamId.indexOf('feed/') === 0 && cached_item.get('origin') !== streamId) {
@@ -1059,7 +1058,6 @@ jQuery(function() {
         var article, attributes, categories, diff, i, itemIsChanged, itemsAreChanged, old_catetories;
 
         itemsAreChanged = false;
-        console.log(data);
         for (i in data) {
           attributes = data[i];
           if (!attributes.cached) {
@@ -1093,7 +1091,7 @@ jQuery(function() {
         if (itemsAreChanged) {
           _this.saveItems();
         }
-        console.log(_this.cached_items);
+        callback && callback();
       });
     },
     loadSubscriptionsRemote: function(callback) {
@@ -1128,7 +1126,6 @@ jQuery(function() {
 
       localStorage.removeItem('item');
       items = this.cached_items.toJSON();
-      console.log(items);
       max_cache_items = 100;
       if (items.length > max_cache_items) {
         items.sort(function(a, b) {
@@ -1209,6 +1206,7 @@ jQuery(function() {
       'desc': '向下滚动',
       'alias': 'right',
       'handler': function() {
+        console.log('j pressed');
         App.vent.trigger('article:prev', App.articleView.model.id);
         return false;
       }
@@ -1263,13 +1261,11 @@ jQuery(function() {
     App.indexView = new IndexListView({
       el: "#index-view",
       itemView: IndexItemView,
-      collection: App.indexList,
-      'scroller': '.app-view aside.wrapper2'
+      collection: App.indexList
     });
     App.indexView.render();
     App.storage.setStreamFilter(streamFilter);
     App.indexView.setStreamFilter(streamFilter);
-    App.vent.trigger('stream:reset');
     App.vent.on('stream:reset', function(stream) {
       if (stream) {
         App.indexList.stream = stream;
@@ -1284,12 +1280,11 @@ jQuery(function() {
       });
       App.labelsView.setCurrent('stream/' + App.indexList.url);
     });
+    App.vent.trigger('stream:reset');
     App.vent.on('article:change', function(id) {
       var newArticle;
 
-      console.log(id);
       newArticle = App.storage.getItem(id);
-      console.log(newArticle);
       App.articleView = new ArticleView({
         el: '#article-view',
         model: newArticle,
@@ -1302,6 +1297,9 @@ jQuery(function() {
     App.vent.on('article:prev', function(id) {
       var article, url;
 
+      if (!id) {
+        id = App.articleView.model.id;
+      }
       if (!App.indexList) {
         return;
       }
@@ -1312,6 +1310,8 @@ jQuery(function() {
           trigger: true,
           replace: true
         });
+      } else {
+        console.log("this is the first article");
       }
     });
     App.vent.on('article:next', function(id) {
@@ -1320,6 +1320,9 @@ jQuery(function() {
       if (!App.indexList) {
         return;
       }
+      if (!id) {
+        id = App.articleView.model.id;
+      }
       article = App.indexList.getNext(id);
       if (article) {
         url = "#item/" + (article.get('id'));
@@ -1327,25 +1330,68 @@ jQuery(function() {
           trigger: true,
           replace: true
         });
+      } else {
+        console.log("this is the last article");
       }
     });
     Backbone.history.start();
   });
-  App.vent.on('help:shortcuts', function() {
-    console.log('hotkeys config:', App.hot_keys);
-  });
+  App.vent.on('help:shortcuts', function() {});
   App.addInitializer(function(options) {
-    _.each(App.hot_keys, function(key, key_config) {
-      var alias_key, _i, _len, _ref;
+    var alias_key, key, key_config, _i, _len, _ref, _ref1;
 
-      console.log(key);
+    _ref = App.hot_keys;
+    for (key in _ref) {
+      key_config = _ref[key];
+      console.log(key, key_config.handler);
       $(document).bind('keydown', key, key_config.handler);
       if (key_config.alias) {
-        console.log(key_config.alias.split(' '));
-        _ref = key_config.alias.split(' ');
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          alias_key = _ref[_i];
+        _ref1 = key_config.alias.split(' ');
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          alias_key = _ref1[_i];
           $(document).bind('keydown', alias_key, key_config.handler);
+        }
+      }
+    }
+  });
+  App.addInitializer(function(options) {
+    $('.app-toolbar .article_list.panel').delegate('button.btn', 'click', function() {
+      var $btn, current_collection, state, _i, _len, _ref;
+
+      $btn = $(this);
+      current_collection = '';
+      if ($btn.hasClass('mark')) {
+        current_collection.mark('read');
+      } else if ($btn.hasClass('filter')) {
+        _ref = ['all', 'read', 'starred'];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          state = _ref[_i];
+          if ($btn.hasClass(state)) {
+            current_collection.filter(state);
+          }
+        }
+      }
+    });
+    $('.app-toolbar .article_detail.panel').delegate('button.btn', 'click', function() {
+      var $btn, current_article_view, state, _i, _j, _len, _len1, _ref, _ref1;
+
+      $btn = $(this);
+      current_article_view = '';
+      if ($btn.hasClass('toggle')) {
+        _ref = ['read', 'star'];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          state = _ref[_i];
+          if ($btn.hasClass(state)) {
+            current_article_view.toggle(state);
+          }
+        }
+      } else if ($btn.hasClass('goto')) {
+        _ref1 = ['refresh', 'next', 'prev'];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          state = _ref1[_j];
+          if ($btn.hasClass(state)) {
+            App.vent.trigger("article:" + state);
+          }
         }
       }
     });

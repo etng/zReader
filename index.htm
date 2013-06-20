@@ -14,13 +14,20 @@
     <div class="container no-user-select">
         <div class="app-toolbar">
             <div class="feed_list panel">
-            toolbar 1
+            <span class="brand">zReader</span>
             </div>
             <div class="article_list panel">
-            toolbar 2
+                <button class="btn mark read">Mark All As Read</button>
+                <button class="btn filter all">All</button>
+                <button class="btn filter unread">Unread</button>
+                <button class="btn filter starred">Starred</button>
             </div>
             <div class="article_detail panel">
-            toolbar 3
+                <button class="btn toggle star">Star</button>
+                <button class="btn toggle read">Read</button>
+                <button class="btn goto refresh">Refresh</button>
+                <button class="btn goto next">Next</button>
+                <button class="btn goto prev">Previous</button>
             </div>
         </div>
         <div class="app-content">
@@ -28,9 +35,8 @@
             <ul>
             </ul>
             </div>
-            <div class="article_list panel scroll" id="index-view">
-            <ul>
-            </ul>
+            <div class="article_list panel scroll">
+                <div id="index-view"><ul></ul></div>
             </div>
             <div class="article_detail panel scroll" id="article-view">
             </div>
