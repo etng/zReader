@@ -1,9 +1,4 @@
 jQuery ->
-    mergeDelta = (delta)->
-        for field, delta of delta
-            if _.has @, field
-                @[field] = @field + delta
-        @
     _.mixin
         diff: (a,b)->
             removed: _.difference b, a
@@ -50,28 +45,25 @@ jQuery ->
             interpolate: /\<\@\=(.+?)\@\>/gim
             evaluate: /\<\@(.+?)\@\>/gim
             escape: /\<\@\-(.+?)\@\>/gim
-    Feed = Backbone.Model.extend
-        defaults:
-            #stat field begin
-            unread: 0
-            all: 0
-            starred: 0
-            markasread: 0
-            read: 0
-            #stat field end
-            title: ''
-            mute: false
+    _.extend Backbone.Model.prototype,
+        mergeDelta: (delta)->
+            for field, count of delta
+                if @has field
+                    @set field, @get(field) + count
+            @
 
+    Feed = Backbone.Model.extend
+        defaults:->
+            defaults =
+                title: ''
+                mute: false
+            for field, label of App.stat_fields
+                defaults.field = 0
+            defaults
         initialize: ->
-            stat_fields =
-                unread: App._ 'unread'
-                all: App._ 'all'
-                starred: App._ 'starred'
-                markasread: App._ 'markasread'
-                read: App._ 'read'
             @on 'change', =>
                 delta = {}
-                for field, label of stat_fields
+                for field, label of App.stat_fields
                     delta[field] = @get(field) - @previous(field)
                 App.storage.allLabel.mergeDelta delta
                 if model.mute
@@ -82,7 +74,6 @@ jQuery ->
                         return
                 else
                     App.storage.othersLabel.mergeDelta delta
-        mergeDelta:mergeDelta
         removeLabel:(label)->
             if App.storage.labels.get(label).isLocked()
                 return
@@ -114,7 +105,6 @@ jQuery ->
             @locked = true
         isLocked:->
             @locked
-        mergeDelta: mergeDelta
         unsubscribe:->
             # unsubscribe from all the feeds under this label
             # only when the label is category
@@ -145,7 +135,7 @@ jQuery ->
                         categories[categories.indexOf(old_name)]=new_name
                     return
         addFeed:(feed)->
-            delta  = _.pick @attributes, 'all', 'unread', 'starred', 'markasread'
+            delta = _.pick.apply _, [feed.attributes].concat(_.keys(App.stat_fields))
             @get('feeds').add feed
             @mergeDelta delta
             @
@@ -212,15 +202,36 @@ jQuery ->
                     type: 'POST'
                     data:
                         "s": "state/reading-list"
-            $.ajax
-                url: "/reader/api/0/edit-tag?ck=#{$.now()}"
-                type: 'POST'
-                data:
-                    "a": "state/starred"#when add mark status
-                    "r": "state/starred"#when remove mark of status
-                    "i": obj.id
-        toggle:(state)->
+        toggle:(state, is_true)->
+            delta = {}
+            notify_data=
+                i: @id
+            category = "state/#{state}"
+            categories = _.clone @get 'categories'
+            has_it = _.contains @get('categories'), category
+            if typeof(is_true)=='undefined'
+               is_true =!has_it
+            if is_true
+                unless has_it
+                    delta[state]= 1
+                    categories.push category
+                    notify_data.a = category
+            else
+                if has_it
+                    delta[state] = -1
+                    categories.splice categories.indexOf(category), 1
+                    notify_data.r = category
+            unless _.isEmpty delta
+                @set {categories}
+                @getFeed().mergeDelta delta
+                $.ajax
+                    url: "/reader/api/0/edit-tag?ck=#{$.now()}"
+                    type: 'POST'
+                    data: notify_data
             true
+        is:(state)->
+            category = "state/#{state}"
+            _.contains @get('categories'), category
         isRead:->
             _.contains @get('categories'), @state_read
         isMarkAsRead:->
@@ -283,8 +294,8 @@ jQuery ->
             return 1 if a.id==App.mutes_label_id
             return -1 if b.id==App.mutes_label_id
             #unreaded on the top
-            return 1 if a.get('unreaded')==0 and b.get('unreaded')>0
-            return -1 if a.get('unreaded')>0 and b.get('unreaded')==0
+            return 1 if a.get('unread')==0 and b.get('unread')>0
+            return -1 if a.get('unread')>0 and b.get('unread')==0
             rank_a = a.getSortRank()
             rank_b = b.getSortRank()
             return 1 if rank_a<rank_b
@@ -429,21 +440,15 @@ jQuery ->
             return
 
         setStreamFilter: (name)->
-            $('#filter-all').removeClass('active')
-            $('#filter-unread').removeClass('active')
-            $('#filter-starred').removeClass('active')
-            switch name
-                when 'state/reading-list'
-                    $('#filter-all').addClass('active')
-                when 'state/unread'
-                    $('#filter-unread').addClass('active')
-                when 'state/starred'
-                    $('#filter-starred').addClass('active')
-                else
-                    $('#filter-all').addClass('active')
+            $('.filter').removeClass 'active'
+            klass = name.split('/')[1]
+            if klass=='reading-list'
+                klass = 'all'
+            $('.filter.'+klass).addClass 'active'
+            return
 
         scrollTop: (n)->
-            scroller = $(this.options.scroller)
+            scroller = @$el.parent()
             scroller.scrollTop n
 
 
@@ -761,6 +766,13 @@ jQuery ->
                     xhr.overrideMimeType "application/json; charset=UTF-8"
                     return
             .done (data)=>
+                data = _.map data, (row, i)->
+                    for field,label of App.stat_fields
+                        old_field ="#{field}_count"
+                        if _.has row, old_field
+                            row[field] = row[old_field]
+                            delete row[old_field]
+                    row
                 @feeds.reset data
                 callback && callback()
                 return
@@ -832,6 +844,12 @@ jQuery ->
         mutes_label_id:'***MUTES***'
         _:(msg_id)->
             msg_id
+    App.stat_fields =
+        unread: App._ 'unread'
+        all: App._ 'all'
+        starred: App._ 'starred'
+        markasread: App._ 'markasread'
+        read: App._ 'read'
     App.hot_keys =
         'k':
             'desc': '向上滚动'
@@ -843,7 +861,6 @@ jQuery ->
             'desc': '向下滚动'
             'alias': 'right'
             'handler': ()->
-                console.log 'j pressed'
                 App.vent.trigger 'article:prev', App.articleView.model.id
                 false
         'f1':
@@ -905,15 +922,24 @@ jQuery ->
             return
         App.vent.trigger 'stream:reset'
         App.vent.on 'article:change', (id)->
+            if @read_countdown_timer
+                clearTimeout @read_countdown_timer
+                @read_countdown_timer = null
+                if App.articleView.model
+                    App.articleView.model.toggle 'markasread', true
             newArticle = App.storage.getItem id
             App.articleView = new ArticleView
                 el: '#article-view'
                 model: newArticle
-                'scroller': '.app-view section.wrapper3'
             App.articleView.render()
             App.indexList.trigger 'article:current-change', id
             # 修改标题
             document.title = newArticle.get 'title'
+            @read_countdown_timer = setTimeout =>
+                @read_countdown_timer = null
+                App.articleView.model.toggle 'read', true
+                return
+            ,3000
             return
         App.vent.on 'article:prev', (id)->
             id = App.articleView.model.id unless id
@@ -939,37 +965,58 @@ jQuery ->
             else
                 console.log "this is the last article"
             return
+        App.vent.on 'filter', (state)->
+            if state=='all'
+                stream = 'state/reading-list'
+            else
+                stream = "state/#{state}"
+            App.indexView.setStreamFilter stream
+            App.storage.setStreamFilter stream
+            App.vent.trigger 'stream:reset'
+            return
         Backbone.history.start()
         return
     App.vent.on 'help:shortcuts', ()->
         return
     App.addInitializer (options)->
+        evt = 'keypress'
         for key, key_config of App.hot_keys
-            console.log key, key_config.handler
-            $(document).bind 'keydown', key, key_config.handler
+            $(document).bind evt, key, key_config.handler
             if key_config.alias
                 for alias_key in key_config.alias.split ' '
-                    $(document).bind 'keydown', alias_key, key_config.handler
+                    $(document).bind evt, alias_key, key_config.handler
         return
     App.addInitializer (options)->
         $('.app-toolbar .article_list.panel').delegate 'button.btn', 'click', ->
             $btn = $(this)
-            current_collection = ''
             if $btn.hasClass 'mark'
-                current_collection.mark 'read'
+                $.ajax
+                    url: "/reader/api/0/mark-all-as-read?ck=#{$.now()}"
+                    type: 'POST'
+                    data:
+                        "s": App.indexList.stream
+                        "t": App.indexList.title
+                .done (data)->
+                    console.log data
+                    return
             else if $btn.hasClass 'filter'
-                for state in ['all', 'read', 'starred']
-                    current_collection.filter state if $btn.hasClass state
+                for state in ['all', 'unread', 'starred']
+                    if $btn.hasClass state
+                        App.vent.trigger 'filter', state
+                        break
             return
         $('.app-toolbar .article_detail.panel').delegate 'button.btn', 'click', ->
             $btn = $(this)
-            current_article_view = ''
             if $btn.hasClass 'toggle'
-              for state in ['read', 'star']
-                current_article_view.toggle state if $btn.hasClass state
+              for state in ['markasread', 'star']
+                  if $btn.hasClass state
+                      App.articleView.model.toggle state
+                      break
             else if $btn.hasClass 'goto'
                 for state in ['refresh', 'next', 'prev']
-                    App.vent.trigger "article:#{state}" if $btn.hasClass state
+                    if $btn.hasClass state
+                        App.vent.trigger "article:#{state}"
+                        break
             return
         return
     App.start()
