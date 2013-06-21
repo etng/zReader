@@ -66,10 +66,10 @@ jQuery ->
                 for field, label of App.stat_fields
                     delta[field] = @get(field) - @previous(field)
                 App.storage.allLabel.mergeDelta delta
-                if model.mute
+                if @mute
                     Appl.storage.mutesLabel.mergeDelta delta
-                if model.get('categories') && model.get('categories').length
-                    _.each model.get('categories'), (category)->
+                if @get('categories') && @get('categories').length
+                    _.each @get('categories'), (category)->
                         App.storage.labels.get(category).mergeDelta delta
                         return
                 else
@@ -153,55 +153,9 @@ jQuery ->
         state_markasread: 'state/markasread'
         state_starred: 'state/starred'
         getFeed:->
-            new Feed()
-        setState:(state)->
-            switch state
-                when 'read'
-                    unless @isRead()
-                        categories = _.clone @get 'categories'
-                        categories.push @state_read
-                        @set {categories}
-                        @getFeed().increment 'read'
-                when 'markasread'
-                    unless @isMarkAsRead()
-                        categories = _.clone @get 'categories'
-                        categories.push @state_markasread
-                        @set {categories}
-                        @getFeed().increment 'markasread'
-                when 'unread'
-                    if @isMarkAsRead() or @isRead()
-                        categories = _.clone @get 'categories'
-                        if @isMarkAsRead()
-                            categories.splice categories.indexOf(@state_markasread), 1
-                        if @isRead()
-                            categories.splice categories.indexOf(@state_read), 1
-                        @set {categories}
-                        @getFeed().increment 'markasread'
-                when 'star'
-                    unless @isStarred()
-                        categories = _.clone @get 'categories'
-                        categories.push @state_starred
-                        @set {categories}
-                        @getFeed().increment 'starred'
-                when 'unstar'
-                    if @isStarred()
-                        categories = _.clone @get 'categories'
-                        categories.splice categories.indexOf(@state_starred), 1
-                        @set {categories}
-                        @getFeed().increment 'markasread'
-                else
-                    console.log state
-            #get feeds
-            $.ajax
-                url: "/reader/api/0/subscription/list?ck=#{$.now()}"
-                type: 'POST'
-            #mark all as read
-            if obj instanceof Feed
-                $.ajax
-                    url: "/reader/api/0/mark-all-as-read?ck=#{$.now()}"
-                    type: 'POST'
-                    data:
-                        "s": "state/reading-list"
+            feed = App.storage.feeds.findWhere {id: @get('origin').streamId}
+            console.log feed
+            feed
         toggle:(state, is_true)->
             delta = {}
             notify_data=
@@ -233,11 +187,11 @@ jQuery ->
             category = "state/#{state}"
             _.contains @get('categories'), category
         isRead:->
-            _.contains @get('categories'), @state_read
+            @is 'read'
         isMarkAsRead:->
-            _.contains @get('categories'), @state_markasread
+            @is 'markasread'
         isStarred:->
-            _.contains @get('categories'), @state_starred
+            @is 'starred'
         getItemClass:->
             klasses=[]
             klasses.push 'read' if @isRead()
@@ -331,7 +285,7 @@ jQuery ->
     IndexItemView = Backbone.Marionette.ItemView.extend
         template : '#index-item-template',
         attributes : ()->
-            'class' : 'index-item' + this.model.getItemClass()
+            'class' : 'index-item ' + @model.getItemClass()
         templateHelpers:
             prettyDate: (time)->
                 _.prettyDate time
@@ -341,44 +295,33 @@ jQuery ->
             'click': 'clicked'
 
         clicked: (event)->
-            if $(event.target).hasClass('star')
+            if $(event.target).hasClass 'star'
                 event.stopPropagation()
-
-                if(this.$el.hasClass('starred'))
-                    this.model.mark('unstar')
-                 else
-                    this.model.mark('star')
-
-            else if $(event.target).hasClass('check')
+                @model.toggle 'starred', !(@$el.hasClass 'starred')
+            else if $(event.target).hasClass 'check'
                 event.stopPropagation()
-                if this.$el.hasClass('read') || this.$el.hasClass('markasread')
-                    this.model.mark('unread')
-                 else
-                    this.model.mark('markasread')
-
+                if @$el.hasClass 'read' or @$el.hasClass 'read'
+                    @model.toggle 'read', false
+                    @model.toggle 'markasread', false
+                else
+                    @model.toggle 'unread', false
              else
                 event.preventDefault()
-                App.router.navigate('#item/' + this.model.get('id'), {trigger: true, replace:(window.location.hash.indexOf('#item/') == 0)})
-                $('.wrapper2').removeClass('on')
+                App.router.navigate "#item/#{@model.get('id')}",
+                    trigger: true
+                    replace: window.location.hash.indexOf('#item/') == 0
+                $('.wrapper2').removeClass 'on'
         modelEvents:
             'change': 'changed'
-
         changed: ()->
-            newCategories = this.model.get('categories')
-            oldCategories = this.model.previous('categories')
-            if(newCategories.indexOf('state/starred') >= 0 && oldCategories.indexOf('state/starred') < 0)
-                this.$el.addClass('starred')
-            if(newCategories.indexOf('state/starred') < 0 && oldCategories.indexOf('state/starred') >= 0)
-                this.$el.removeClass('starred')
-            if(newCategories.indexOf('state/read') >= 0 && oldCategories.indexOf('state/read') < 0)
-                this.$el.addClass('read')
-            if(newCategories.indexOf('state/read') < 0 && oldCategories.indexOf('state/read') >= 0)
-                this.$el.removeClass('read')
-            if(newCategories.indexOf('state/markasread') >= 0 && oldCategories.indexOf('state/markasread') < 0)
-                this.$el.addClass('markasread')
-            if(newCategories.indexOf('state/markasread') < 0 && oldCategories.indexOf('state/markasread') >= 0)
-                this.$el.removeClass('markasread')
-
+            newCategories = @model.get 'categories'
+            oldCategories = @model.previous 'categories'
+            diff =_.diff oldCategories, newCategories
+            for added in diff.added
+                @$el.addClass added
+            for removed in diff.removed
+                @$el.removeClass removed
+            return
 
     IndexListView = Backbone.Marionette.CollectionView.extend
         initialize : ()->
@@ -500,7 +443,7 @@ jQuery ->
             'change': 'changed'
         changed: ()->
             count = @templateHelpers.getCount.apply @model.attributes, ['unread']
-            @ui.counter.html "(#{counter})"
+            @ui.counter.html "(#{count})"
             @ui.counter.toggleClass 'on', count=='0'
             @ui.title.html @model.get 'title'
             @ui.mute.toggleClass 'on', @model.get('mute')
@@ -532,7 +475,7 @@ jQuery ->
                     else
                         return 'stream/' + encodeURIComponent "label/#{@id}"
         initialize: ()->
-            this.collection = this.model.get 'feeds'
+            @collection = @model.get 'feeds'
             return
         events:
             'click': 'clicked'
@@ -543,13 +486,13 @@ jQuery ->
                 if labelPanel.hasClass 'on'
                     App.vent.trigger 'label-panel:close'
                  else
-                    App.vent.trigger 'label-panel:open', this.model
+                    App.vent.trigger 'label-panel:open', @model
             else if $(event.target).hasClass 'arrow' # 展开/关闭
                 event.stopPropagation()
-                this.$el.toggleClass 'expanded'
+                @$el.toggleClass 'expanded'
             else  # 标题点击，切换
                 event.stopPropagation()
-                url = '#' + this.templateHelpers.getStreamId.apply this.model.attributes
+                url = '#' + @templateHelpers.getStreamId.apply @model.attributes
                 if window.location.hash == url
                     App.vent.trigger 'stream:reset', url.substring('#'.length)
                  else
@@ -559,9 +502,9 @@ jQuery ->
         modelEvents:
             'change': 'changed'
         changed: ()->
-            counter = this.templateHelpers.getCount.apply this.model.attributes, ['unread']
-            this.ui.counter.html "(#{counter}"
-            this.ui.counter.toggleClass 'on', counter=='0'
+            counter = @templateHelpers.getCount.apply @model.attributes, ['unread']
+            @ui.counter.html "(#{counter}"
+            @ui.counter.toggleClass 'on', counter=='0'
             return
     LabelsView = Backbone.Marionette.CollectionView.extend
         itemView: LabelView
@@ -718,7 +661,7 @@ jQuery ->
             qsa.push ['ck', $.now()]
             if collection.continuation
                 qsa.push ['c', collection.continuation]
-            filter = this.getStreamFilter()
+            filter = @getStreamFilter()
             if filter && filter !=_.first(@valid_filters)
                 qsa.push ['filter', filter]
             qs = []
@@ -855,13 +798,13 @@ jQuery ->
             'desc': '向上滚动'
             'alias': 'left'
             'handler': ()->
-                App.vent.trigger 'article:next', App.articleView.model.id
+                App.vent.trigger 'article:prev', App.articleView.model.id
                 false
         'j':
             'desc': '向下滚动'
             'alias': 'right'
             'handler': ()->
-                App.vent.trigger 'article:prev', App.articleView.model.id
+                App.vent.trigger 'article:next', App.articleView.model.id
                 false
         'f1':
             name: 'F1/?'

@@ -1,0 +1,128 @@
+.app-content .feed_list span,
+.app-content .article_list .index-item-title{
+    font-size: 13px;
+}
+.app-toolbar .article_list,
+.app-content .feed_list,
+.app-content .article_list .index-item-title{
+    line-height: 21px;
+}
+.app-content .feed_list .label-item,
+.app-content .article_list article{
+    padding: 0 0 0 10px;
+}
+.app-content .article_list .index-item-meta,
+.article_detail .article-origin,
+.article_detail .article-meta{
+    color: #777;
+    font-size: 12px;
+}
+/* 上方工具 */
+.app-toolbar .feed_list{
+    padding-left: 16px;
+    height: 31px;
+    line-height: 31px;
+    padding: 6px 0px 0px 10px;
+    border-bottom: 1px solid #ebebeb;
+    font-weight: normal;
+    font-size: 20px;
+    color: #dd4b39;
+}
+.app-toolbar .logo{
+    background-image: url('../images/logo.png');
+    opacity: .75;
+    background-size: 30px;
+    height: 29px;
+    position: absolute;
+    width: 29px;
+}
+.app-toolbar .brand {
+    padding: 0 0 0 30px;
+    font-size: 18px;
+}
+.app-toolbar .article_detail .btn,
+.app-toolbar .article_list .btn{
+    border: 1px solid transparent;
+    color: #fff;
+    text-shadow: 0 1px rgba(0,0,0,0.1);
+    text-transform: uppercase;
+
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+    cursor: default;
+    font-size: 11px;
+    font-weight: bold;
+}
+.app-toolbar .article_list .btn{
+    background-color: #250;
+    /*
+    background-image: -webkit-linear-gradient(top,#dd4b39,#d14836);
+    background-image: -moz-linear-gradient(top,#dd4b39,#d14836);
+    background-image: -ms-linear-gradient(top,#dd4b39,#d14836);
+    background-image: -o-linear-gradient(top,#dd4b39,#d14836);
+    background-image: linear-gradient(top,#dd4b39,#d14836);
+    */
+}
+.app-toolbar .article_detail .btn{
+    background-color: #15a;
+}
+/* 内容 */
+.app-content .feed_list {
+    color: #000;
+    font-weight: bold
+    padding: 6px 0;
+}
+.app-content .feed_list ul li span.title{
+    text-align: -webkit-match-parent;
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 180px;
+    text-overflow: ellipsis;
+}
+
+.app-content .feed_list ul li span.counter{
+    padding: 0 0 0 4px;
+    margin-right: 16px;
+    color: #666;
+    font-size: 85%;
+    display: inline-block;
+    vertical-align: top;
+}
+.app-content .article_list{
+    width: 280px;
+    overflow-x: hidden;
+}
+.app-content .article_list .index-item{ /*未读*/
+    background: #eee;
+    border-color: #eee;
+}
+.app-content .article_list .markasread,
+.app-content .article_list .read{ /*已读*/
+    background: #fff;
+    border-color: #fff;
+    font-weight: normal;
+}
+.app-content .article_list .current{ /*在读*/
+    background: #ddd;
+    border-color: #ddd;
+}
+.app-content .article_list article{
+    max-width: 254px;
+}
+/* 文章 */
+.article_detail .article-header{
+}
+.article_detail .article-header .article-title{
+    color: #15c;
+    text-decoration: none;
+    font-family: arial,sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+}
+.article_detail .article-header,
+.article_detail .article-content{
+    padding: 0 10px;
+    font-size: 90%;
+}

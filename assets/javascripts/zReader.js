@@ -108,11 +108,11 @@ jQuery(function() {
           delta[field] = _this.get(field) - _this.previous(field);
         }
         App.storage.allLabel.mergeDelta(delta);
-        if (model.mute) {
+        if (_this.mute) {
           Appl.storage.mutesLabel.mergeDelta(delta);
         }
-        if (model.get('categories') && model.get('categories').length) {
-          return _.each(model.get('categories'), function(category) {
+        if (_this.get('categories') && _this.get('categories').length) {
+          return _.each(_this.get('categories'), function(category) {
             App.storage.labels.get(category).mergeDelta(delta);
           });
         } else {
@@ -245,83 +245,13 @@ jQuery(function() {
     state_markasread: 'state/markasread',
     state_starred: 'state/starred',
     getFeed: function() {
-      return new Feed();
-    },
-    setState: function(state) {
-      var categories;
+      var feed;
 
-      switch (state) {
-        case 'read':
-          if (!this.isRead()) {
-            categories = _.clone(this.get('categories'));
-            categories.push(this.state_read);
-            this.set({
-              categories: categories
-            });
-            this.getFeed().increment('read');
-          }
-          break;
-        case 'markasread':
-          if (!this.isMarkAsRead()) {
-            categories = _.clone(this.get('categories'));
-            categories.push(this.state_markasread);
-            this.set({
-              categories: categories
-            });
-            this.getFeed().increment('markasread');
-          }
-          break;
-        case 'unread':
-          if (this.isMarkAsRead() || this.isRead()) {
-            categories = _.clone(this.get('categories'));
-            if (this.isMarkAsRead()) {
-              categories.splice(categories.indexOf(this.state_markasread), 1);
-            }
-            if (this.isRead()) {
-              categories.splice(categories.indexOf(this.state_read), 1);
-            }
-            this.set({
-              categories: categories
-            });
-            this.getFeed().increment('markasread');
-          }
-          break;
-        case 'star':
-          if (!this.isStarred()) {
-            categories = _.clone(this.get('categories'));
-            categories.push(this.state_starred);
-            this.set({
-              categories: categories
-            });
-            this.getFeed().increment('starred');
-          }
-          break;
-        case 'unstar':
-          if (this.isStarred()) {
-            categories = _.clone(this.get('categories'));
-            categories.splice(categories.indexOf(this.state_starred), 1);
-            this.set({
-              categories: categories
-            });
-            this.getFeed().increment('markasread');
-          }
-          break;
-        default:
-          console.log(state);
-      }
-      $.ajax({
-        url: "/reader/api/0/subscription/list?ck=" + ($.now()),
-        type: 'POST'
+      feed = App.storage.feeds.findWhere({
+        id: this.get('origin').streamId
       });
-      if (obj instanceof Feed) {
-        return $.ajax({
-          url: "/reader/api/0/mark-all-as-read?ck=" + ($.now()),
-          type: 'POST',
-          data: {
-            "s": "state/reading-list"
-          }
-        });
-      }
+      console.log(feed);
+      return feed;
     },
     toggle: function(state, is_true) {
       var categories, category, delta, has_it, notify_data;
@@ -369,13 +299,13 @@ jQuery(function() {
       return _.contains(this.get('categories'), category);
     },
     isRead: function() {
-      return _.contains(this.get('categories'), this.state_read);
+      return this.is('read');
     },
     isMarkAsRead: function() {
-      return _.contains(this.get('categories'), this.state_markasread);
+      return this.is('markasread');
     },
     isStarred: function() {
-      return _.contains(this.get('categories'), this.state_starred);
+      return this.is('starred');
     },
     getItemClass: function() {
       var klasses;
@@ -530,7 +460,7 @@ jQuery(function() {
     template: '#index-item-template',
     attributes: function() {
       return {
-        'class': 'index-item' + this.model.getItemClass()
+        'class': 'index-item ' + this.model.getItemClass()
       };
     },
     templateHelpers: {
@@ -547,21 +477,18 @@ jQuery(function() {
     clicked: function(event) {
       if ($(event.target).hasClass('star')) {
         event.stopPropagation();
-        if (this.$el.hasClass('starred')) {
-          return this.model.mark('unstar');
-        } else {
-          return this.model.mark('star');
-        }
+        return this.model.toggle('starred', !(this.$el.hasClass('starred')));
       } else if ($(event.target).hasClass('check')) {
         event.stopPropagation();
-        if (this.$el.hasClass('read') || this.$el.hasClass('markasread')) {
-          return this.model.mark('unread');
+        if (this.$el.hasClass('read' || this.$el.hasClass('read'))) {
+          this.model.toggle('read', false);
+          return this.model.toggle('markasread', false);
         } else {
-          return this.model.mark('markasread');
+          return this.model.toggle('unread', false);
         }
       } else {
         event.preventDefault();
-        App.router.navigate('#item/' + this.model.get('id'), {
+        App.router.navigate("#item/" + (this.model.get('id')), {
           trigger: true,
           replace: window.location.hash.indexOf('#item/') === 0
         });
@@ -572,27 +499,20 @@ jQuery(function() {
       'change': 'changed'
     },
     changed: function() {
-      var newCategories, oldCategories;
+      var added, diff, newCategories, oldCategories, removed, _i, _j, _len, _len1, _ref, _ref1;
 
       newCategories = this.model.get('categories');
       oldCategories = this.model.previous('categories');
-      if (newCategories.indexOf('state/starred') >= 0 && oldCategories.indexOf('state/starred') < 0) {
-        this.$el.addClass('starred');
+      diff = _.diff(oldCategories, newCategories);
+      _ref = diff.added;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        added = _ref[_i];
+        this.$el.addClass(added);
       }
-      if (newCategories.indexOf('state/starred') < 0 && oldCategories.indexOf('state/starred') >= 0) {
-        this.$el.removeClass('starred');
-      }
-      if (newCategories.indexOf('state/read') >= 0 && oldCategories.indexOf('state/read') < 0) {
-        this.$el.addClass('read');
-      }
-      if (newCategories.indexOf('state/read') < 0 && oldCategories.indexOf('state/read') >= 0) {
-        this.$el.removeClass('read');
-      }
-      if (newCategories.indexOf('state/markasread') >= 0 && oldCategories.indexOf('state/markasread') < 0) {
-        this.$el.addClass('markasread');
-      }
-      if (newCategories.indexOf('state/markasread') < 0 && oldCategories.indexOf('state/markasread') >= 0) {
-        return this.$el.removeClass('markasread');
+      _ref1 = diff.removed;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        removed = _ref1[_j];
+        this.$el.removeClass(removed);
       }
     }
   });
@@ -756,7 +676,7 @@ jQuery(function() {
       var count;
 
       count = this.templateHelpers.getCount.apply(this.model.attributes, ['unread']);
-      this.ui.counter.html("(" + counter + ")");
+      this.ui.counter.html("(" + count + ")");
       this.ui.counter.toggleClass('on', count === '0');
       this.ui.title.html(this.model.get('title'));
       this.ui.mute.toggleClass('on', this.model.get('mute'));
@@ -1245,7 +1165,7 @@ jQuery(function() {
       'desc': '向上滚动',
       'alias': 'left',
       'handler': function() {
-        App.vent.trigger('article:next', App.articleView.model.id);
+        App.vent.trigger('article:prev', App.articleView.model.id);
         return false;
       }
     },
@@ -1253,7 +1173,7 @@ jQuery(function() {
       'desc': '向下滚动',
       'alias': 'right',
       'handler': function() {
-        App.vent.trigger('article:prev', App.articleView.model.id);
+        App.vent.trigger('article:next', App.articleView.model.id);
         return false;
       }
     },
