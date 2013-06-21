@@ -1,3 +1,7 @@
+// compile command
+//      sass --precision 2 --load-path lib --style expanded --watch src/zReader.sass:zReader.css
+// compressed version compile command
+//      sass --precision 2 --load-path lib --style compressed --watch src/zReader.sass:zReader.min.css
 @mixin calc($property, $variable, $operation, $value, $fallback)
     #{$property}: $fallback //for browsers that don't support calc function
     #{$property}: -mox-calc(#{$variable} #{$operation} #{$value})
@@ -90,3 +94,7 @@ menu,ol,ul
             position: fixed
             top: $toolbar_height
             @include calc(height, 100%, "-", $toolbar_height, 98%)
+.current
+    color: red
+.active
+    color: red
