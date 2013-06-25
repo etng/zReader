@@ -3,6 +3,7 @@
 *.bak
 *.log
 
-var/data/
-var/tmp/
-lib/zendframework/*
+var/data/*
+var/tmp/*
+var/log/*
+var/config.ini

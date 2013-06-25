@@ -4,6 +4,7 @@ set_include_path(get_include_path()
     . PATH_SEPARATOR . realpath(BASE_PATH . '/lib/zendframework/library')
     . PATH_SEPARATOR . realpath(BASE_PATH . '/lib')
 );
+error_reporting(E_ALL);
 require_once 'Zend/Loader/Autoloader.php';
 require_once 'Et/Et.php';
 defined('API_URL') || define('API_URL', BASE_URL_ABS. 'api.php');
@@ -32,24 +33,11 @@ $cache = Zend_Cache::factory(
 Zend_Feed_Reader::setCache($cache);
 Zend_Feed_Reader::useHttpConditionalGet();
 
-$config = new Zend_Config(
-    array(
-        'database' => array(
-            'adapter' => 'Pdo_Mysql',
-            'params'  => array(
-                'host'     => 'localhost',
-                'dbname'   => 'reader',
-                'username' => 'username',
-                'password' => 'password',
-                'charset' => 'UTF8',
-            )
-        )
-    )
-);
-
+$config = new Zend_Config_Ini(BASE_PATH . '/var/config.ini');
 $db = Zend_Db::factory($config->database);
 Zend_Db_Table::setDefaultAdapter($db);
 Zend_Db_Table_Abstract::setDefaultMetadataCache($cache);
+
 function gz_get_contents($filename)
 {
     ob_start();
