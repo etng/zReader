@@ -1,0 +1,55 @@
+article, aside, footer, header, hgroup, main, nav, section {
+	display: block;
+}
+
+a:focus {
+	outline: thin dotted;
+}
+
+a:hover,a:active {
+	outline: 0;
+}
+
+h1,h2,h3,h4,h5,h6 {
+	margin: 0;
+}
+
+dl,menu,ol,ul {
+	margin: 0;
+}
+
+menu,ol,ul {
+	padding: 0;
+	list-style: none;
+	list-style-image: none;
+}
+
+.text-rendering {
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+}
+
+.no-user-select {
+	-webkit-touch-callout: none;
+
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.allow-user-select {
+	-webkit-touch-callout: text;
+
+	-webkit-user-select: text;
+	-khtml-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+	user-select: text;
+}
+
+.hidden {
+	display: none;
+	visibility: hidden;
+}

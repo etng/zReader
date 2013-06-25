@@ -1,6 +1,6 @@
+#common files
 *.swp
-*.tmp
+*.bak
 *.log
-*~
-.sass-cache
 
+var/data/

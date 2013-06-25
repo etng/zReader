@@ -69,13 +69,15 @@ jQuery(function() {
   };
   _.extend(Backbone.Model.prototype, {
     mergeDelta: function(delta) {
-      var count, field;
+      var base, count, field;
 
       for (field in delta) {
         count = delta[field];
+        base = 0;
         if (this.has(field)) {
-          this.set(field, this.get(field) + count);
+          base = this.get(field);
         }
+        this.set(field, base + count);
       }
       return this;
     }

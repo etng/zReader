@@ -6,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
+    <link href="./assets/stylesheets/reset.css" rel="stylesheet">
     <link href="./assets/stylesheets/zReader.css" rel="stylesheet">
+    <link href="./assets/stylesheets/fontello.css" rel="stylesheet">
     <link href="./assets/stylesheets/extra.css" rel="stylesheet">
     <link rel="shortcut icon" href="./assets/ico/favicon.png">
   </head>
@@ -15,7 +17,7 @@
     <div class="container no-user-select">
         <div class="app-toolbar">
             <div class="feed_list panel">
-			<i class="logo"></i>
+            <i class="logo"></i>
             <span class="brand">zReader</span>
             </div>
             <div class="article_list panel">
@@ -33,79 +35,78 @@
             </div>
         </div>
         <div class="app-content">
-            <div class="feed_list panel scroll" id="label-view">
-            <ul>
-            </ul>
+            <div class="feed_list panel scroll side-tree" id="label-view">
             </div>
             <div class="article_list panel scroll">
-                <div id="index-view"><ul></ul></div>
+                <div id="index-view">
+                </div>
             </div>
             <div class="article_detail panel scroll" id="article-view">
             </div>
         </div>
     </div>
-	<script type="text/template" id="feed-item-template">
-		<i class="icon mute icon-mute <@=getMuteClass()@>"></i>
-		<i class="icon more icon-angle-double-right"></i>
-		<span data-url="#<@=getStreamId ()@>" class="title"><span class="txt"><@=title@></span><span class="counter <@=(getCount('unread')=='0'?'':'on')@>">(<@=getCount("unread")@>)</span></span>
-	</script>
+    <script type="text/template" id="feed-item-template">
+        <i class="icon mute icon-mute <@=getMuteClass()@>"></i>
+        <i class="icon more icon-angle-double-right"></i>
+        <span data-url="#<@=getStreamId ()@>" class="title"><span class="txt"><@=title@></span><span class="counter <@=(getCount('unread')=='0'?'':'on')@>">(<@=getCount("unread")@>)</span></span>
+    </script>
 
-	<script type="text/template" id="label-item-template">
-		<li class="label" data-id="<@=getStreamId ()@>">
-			<i class="icon arrow icon-right-open"></i>
-			<i class="icon more icon-angle-double-right"></i>
-			<span class="title"><@=title@><span class="counter <@=(getCount('unread')=='0'?'':'on')@>">(<@=getCount("unread")@>)</span></span>
-		</li>
-		<ul class="feed-items"></ul>
-	</script>
+    <script type="text/template" id="label-item-template">
+        <li class="label" data-id="<@=getStreamId ()@>">
+            <i class="icon arrow icon-right-open"></i>
+            <i class="icon more icon-angle-double-right"></i>
+            <span class="title"><@=title@><span class="counter <@=(getCount('unread')=='0'?'':'on')@>">(<@=getCount("unread")@>)</span></span>
+        </li>
+        <ul class="feed-items"></ul>
+    </script>
 
-	<script type="text/template" id="index-item-template">
-		<article data-id="<@=id@>">
-			<h3 class="index-item-title">
-				<i class="icon star icon-star-empty"></i>
-				<span data-url="#item/<@=id@>"><@= title @></span>
-			</h3>
-			<div class="index-item-meta">
-				<i class="icon check icon-ok-circle"></i>
-				<span class="index-item-time"><@=prettyDate(updated*1000)@></span>
-				<span> - </span>
-				<span class="index-item-origin"><@= origin.title@></span>
-			</div>
-		</article>
-	</script>
+    <script type="text/template" id="index-item-template">
+        <article data-id="<@=id@>">
+            <h3 class="index-item-title">
+                <i class="icon star icon-star-empty"></i>
+                <span data-url="#item/<@=id@>"><@= title @></span>
+            </h3>
+            <div class="index-item-meta">
+                <i class="icon check icon-ok-circle"></i>
+                <span class="index-item-time"><@=prettyDate(updated*1000)@></span>
+                <span> - </span>
+                <span class="index-item-origin"><@= origin.title@></span>
+            </div>
+        </article>
+    </script>
 
-	<script type="text/template" id="article-template">
-		<article data-id="<@=id@>" class="article-item <@=getItemClass ()@>">
-			<div class="article-header">
-				<div class="article-origin">
-					<span data-url="#stream/<@=encodeURIComponent(origin.streamId)@>"><@=origin.title@></span>
-				</div>
-				<h1 class="article-title">
-					<a href="<@=alternate.href@>" target="_blank"><@=title@></a>
-				</h1>
-				<div class="article-meta">
-					<span class="article-time"><@=prettyDate(updated*1000)@></span>
-					<span> - </span>
-					<span class="article-author"><@=author@></span>
-				</div>
-			</div>
-			<div class="article-content">
-				<div class="article-content-inner">
-					<div>
-						<@=getContent ()@>
-					</div>
-				</div>
-			</div>
-		</article>
-	</script>
+    <script type="text/template" id="article-template">
+        <article data-id="<@=id@>" class="article-item <@=getItemClass ()@>">
+            <div class="article-header">
+                <div class="article-origin">
+                    <span data-url="#stream/<@=encodeURIComponent(origin.streamId)@>"><@=origin.title@></span>
+                </div>
+                <h1 class="article-title">
+                    <a href="<@=alternate.href@>" target="_blank"><@=title@></a>
+                </h1>
+                <div class="article-meta">
+                    <span class="article-time"><@=prettyDate(updated*1000)@></span>
+                    <span> - </span>
+                    <span class="article-author"><@=author@></span>
+                </div>
+            </div>
+            <div class="article-content">
+                <div class="article-content-inner">
+                    <div>
+                        <@=getContent ()@>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </script>
     <script src="./assets/javascripts/json2.js"></script>
     <script src="./assets/javascripts/jquery.js"></script>
     <script src="./assets/javascripts/jquery.bindWithDelay.js"></script>
     <script src="./assets/javascripts/jquery.hotkeys.js"></script>
-	<script src="./assets/javascripts/underscore.js"></script>
+    <script src="./assets/javascripts/underscore.js"></script>
     <script src="./assets/javascripts/backbone.js"></script>
     <script src="./assets/javascripts/backbone.marionette.js"></script>
-	<script src="./assets/javascripts/zReader.js"></script> 
+    <script src="./assets/javascripts/zReader.js"></script> 
   </body>
 </html>
 

@@ -48,8 +48,10 @@ jQuery ->
     _.extend Backbone.Model.prototype,
         mergeDelta: (delta)->
             for field, count of delta
+                base =0
                 if @has field
-                    @set field, @get(field) + count
+                    base = @get(field)
+                @set field, base + count
             @
 
     Feed = Backbone.Model.extend
