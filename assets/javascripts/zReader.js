@@ -129,7 +129,7 @@ jQuery(function() {
         return;
       }
       return $.ajax({
-        url: "/reader/api/0/disable-tag?ck=" + ($.now()),
+        url: "" + API_URL + "/disable-tag?ck=" + ($.now()),
         type: 'POST',
         data: {
           "s": label
@@ -176,7 +176,7 @@ jQuery(function() {
         throw "can not unsubscribe here";
       }
       return $.ajax({
-        url: "/reader/api/0/empty-tag?ck=" + ($.now()),
+        url: "" + API_URL + "/empty-tag?ck=" + ($.now()),
         type: 'POST',
         data: {
           "s": this.title
@@ -200,7 +200,7 @@ jQuery(function() {
 
       old_name = this.get('title');
       return $.ajax({
-        url: "/reader/api/0/rename-tag?ck=" + ($.now()),
+        url: "" + API_URL + "/rename-tag?ck=" + ($.now()),
         type: 'POST',
         data: {
           "s": old_name,
@@ -287,7 +287,7 @@ jQuery(function() {
         });
         this.getFeed().mergeDelta(delta);
         $.ajax({
-          url: "/reader/api/0/edit-tag?ck=" + ($.now()),
+          url: "" + API_URL + "/edit-tag?ck=" + ($.now()),
           type: 'POST',
           data: notify_data
         });
@@ -974,9 +974,7 @@ jQuery(function() {
         _this = this;
 
       qsa = [];
-      url = '/reader/api/0/stream/contents/' + collection.stream;
-      url = "var/data/reader_items.json";
-      qsa.push(['stream', collection.stream]);
+      url = ("" + API_URL + "/stream/contents/") + collection.stream;
       qsa.push(['n', collection.page_size]);
       qsa.push(['ck', $.now()]);
       if (collection.continuation) {
@@ -1099,7 +1097,7 @@ jQuery(function() {
     },
     quickSubscribe: function(query, callback) {
       return $.ajax({
-        url: "/reader/api/0/subscription/quickadd?ck=" + ($.now()),
+        url: "" + API_URL + "/subscription/quickadd?ck=" + ($.now()),
         type: 'POST',
         data: {
           "quickadd": query
@@ -1352,7 +1350,7 @@ jQuery(function() {
       $btn = $(this);
       if ($btn.hasClass('mark')) {
         $.ajax({
-          url: "/reader/api/0/mark-all-as-read?ck=" + ($.now()),
+          url: "" + API_URL + "/mark-all-as-read?ck=" + ($.now()),
           type: 'POST',
           data: {
             "s": App.indexList.stream,
@@ -1377,7 +1375,7 @@ jQuery(function() {
 
       $btn = $(this);
       if ($btn.hasClass('toggle')) {
-        _ref = ['markasread', 'star'];
+        _ref = ['markasread', 'starred'];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           state = _ref[_i];
           if ($btn.hasClass(state)) {

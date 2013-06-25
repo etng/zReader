@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+<?php
+require dirname(__file__).'/lib/common.php';
+?><!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -6,11 +8,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
-    <link href="./assets/stylesheets/reset.css" rel="stylesheet">
-    <link href="./assets/stylesheets/zReader.css" rel="stylesheet">
-    <link href="./assets/stylesheets/fontello.css" rel="stylesheet">
-    <link href="./assets/stylesheets/extra.css" rel="stylesheet">
-    <link rel="shortcut icon" href="./assets/ico/favicon.png">
+    <link href="<?php echo ASSETS_URL;?>/stylesheets/reset.css" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL;?>/stylesheets/zReader.css" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL;?>/stylesheets/fontello.css" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL;?>/stylesheets/extra.css" rel="stylesheet">
+    <link rel="shortcut icon" href="<?php echo ASSETS_URL;?>/ico/favicon.png">
+<script type="text/javascript">
+window.API_URL="<?php echo API_URL;?>";
+</script>
   </head>
 
   <body>
@@ -27,7 +32,7 @@
                 <button class="btn filter starred">Starred</button>
             </div>
             <div class="article_detail panel">
-                <button class="btn toggle star">Star</button>
+                <button class="btn toggle starred">Star</button>
                 <button class="btn toggle markasread">Read</button>
                 <button class="btn goto refresh">Refresh</button>
                 <button class="btn goto next">Next</button>
@@ -99,14 +104,14 @@
             </div>
         </article>
     </script>
-    <script src="./assets/javascripts/json2.js"></script>
-    <script src="./assets/javascripts/jquery.js"></script>
-    <script src="./assets/javascripts/jquery.bindWithDelay.js"></script>
-    <script src="./assets/javascripts/jquery.hotkeys.js"></script>
-    <script src="./assets/javascripts/underscore.js"></script>
-    <script src="./assets/javascripts/backbone.js"></script>
-    <script src="./assets/javascripts/backbone.marionette.js"></script>
-    <script src="./assets/javascripts/zReader.js"></script> 
+    <script src="<?php echo ASSETS_URL;?>/javascripts/json2.js"></script>
+    <script src="<?php echo ASSETS_URL;?>/javascripts/jquery.js"></script>
+    <script src="<?php echo ASSETS_URL;?>/javascripts/jquery.bindWithDelay.js"></script>
+    <script src="<?php echo ASSETS_URL;?>/javascripts/jquery.hotkeys.js"></script>
+    <script src="<?php echo ASSETS_URL;?>/javascripts/underscore.js"></script>
+    <script src="<?php echo ASSETS_URL;?>/javascripts/backbone.js"></script>
+    <script src="<?php echo ASSETS_URL;?>/javascripts/backbone.marionette.js"></script>
+    <script src="<?php echo ASSETS_URL;?>/javascripts/zReader.js"></script>
   </body>
 </html>
 

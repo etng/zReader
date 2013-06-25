@@ -5,8 +5,9 @@ set_include_path(get_include_path()
     . PATH_SEPARATOR . realpath(BASE_PATH . '/lib')
 );
 require_once 'Zend/Loader/Autoloader.php';
+require_once 'Et/Et.php';
+defined('API_URL') || define('API_URL', BASE_URL_ABS. 'api.php');
 $loader = Zend_Loader_Autoloader::getInstance();
-$loader->registerNamespace('Et_');
 $logger = Zend_Log::factory(array(
     array(
         'writerName'   => 'Stream',
@@ -55,45 +56,66 @@ function gz_get_contents($filename)
     readgzfile($filename);
     return ob_get_clean();
 }
-
-
-function getFeeds()
-{
-    if(!file_exists($feeds_cache_file = BASE_PATH . '/var/cache/feeds.json'))
-    {
-        $opmls = array();
-        $opml_suffix = '.opml.xml';
-        $opml_path = BASE_PATH .'/var/fixture/opml/';
-        foreach(glob($opml_path . '*'.$opml_suffix) as $opml_file)
+Et_Model::register('Reader_Member', 'Reader_');
+class Reader_Member extends Reader_Member_Base{
+    function setPassword($value){
+        $this->_set('password_digest', md5($value));
+    }
+}
+Et_Model::register('Reader_Feed', 'Reader_');
+class Reader_Feed extends Reader_Feed_Base{
+}
+Et_Model::register('Reader_Category', 'Reader_');
+class Reader_Category extends Reader_Category_Base{
+}
+Et_Model::register('Reader_Subscription', 'Reader_');
+class Reader_Subscription extends Reader_Subscription_Base{
+    public static function loadOpml($member, $opml_file){
+        $opml = Et_OPML::parseFile($opml_file);
+        foreach($opml->feeds as $feed)
         {
-            $name = basename($opml_file,$opml_suffix );
-            $opmls[$name] = $opml = Et_OPML::parseFile($opml_file);
-        }
-        $feeds = array();
-        foreach($opmls as $opml)
-        {
-            foreach($opml->feeds as $feed)
+            $feed->path = explode('||', $feed->path);
+            array_shift($feed->path);
+            if($feed->path)
             {
-                $feed->path = explode('||', $feed->path);
-                array_shift($feed->path);
-                if($feed->path)
-                {
-                    $category = array_shift($feed->path);
-                }
-                else
-                {
-                    $category = 'misc';
-                }
-                unset($feed->path);
-                $feed->category = $category;
-                $feeds[]=$feed;
+                $category = array_shift($feed->path);
+                $oCategory = Reader_Category::findOrCreate(array(
+                    'member_id'=>$member->id,
+                    'name' => $category,
+                ));
             }
+            $oFeed = Reader_Feed::findOrCreate(array('feed_url'=>$feed->url), array('name'=>$feed->name));
+            self::findOrCreate(array(
+                'member_id'=>$member->id,
+                'feed_id' => $oFeed->id,
+                'category_id'=>$oCategory?$oCategory->id:0
+            ));
         }
-        file_put_contents($feeds_cache_file, json_encode($feeds));
     }
-    else
-    {
-        $feeds = json_decode(file_get_contents($feeds_cache_file), true);
+}
+Et_Model::register('Reader_Article', 'Reader_');
+class Reader_Article extends Reader_Article_Base{
+}
+
+Et_Model::register('Reader_Activity', 'Reader_');
+class Reader_Activity extends Reader_Activity_Base{
+    function getStream(){
+        return (object)array('activities'=>array(), 'continuation'=>'');
     }
-    return $feeds;
+    function asCategories(){
+        $categories = array();
+        if($this->state_read){
+            $categories[] = 'state/read';
+        }
+        if($this->state_starred){
+            $categories[] = 'state/starred';
+        }
+        if($this->state_markasread){
+            $categories[] = 'state/markasread';
+        }
+        if($this->state_unread){
+            $categories[] = 'state/unread';
+        }
+        return $categories;
+    }
 }

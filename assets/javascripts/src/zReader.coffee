@@ -80,7 +80,7 @@ jQuery ->
             if App.storage.labels.get(label).isLocked()
                 return
             $.ajax
-                url: "/reader/api/0/disable-tag?ck=#{$.now()}"
+                url: "#{API_URL}/disable-tag?ck=#{$.now()}"
                 type: 'POST'
                 data:
                     "s": label
@@ -113,7 +113,7 @@ jQuery ->
             if @locked
                 throw "can not unsubscribe here"
             $.ajax
-                url: "/reader/api/0/empty-tag?ck=#{$.now()}"
+                url: "#{API_URL}/empty-tag?ck=#{$.now()}"
                 type: 'POST'
                 data:
                     "s": @title
@@ -124,7 +124,7 @@ jQuery ->
         rename:(new_name)->
             old_name = @get 'title'
             $.ajax
-                url: "/reader/api/0/rename-tag?ck=#{$.now()}"
+                url: "#{API_URL}/rename-tag?ck=#{$.now()}"
                 type: 'POST'
                 data:
                     "s": old_name
@@ -181,7 +181,7 @@ jQuery ->
                 @set {categories}
                 @getFeed().mergeDelta delta
                 $.ajax
-                    url: "/reader/api/0/edit-tag?ck=#{$.now()}"
+                    url: "#{API_URL}/edit-tag?ck=#{$.now()}"
                     type: 'POST'
                     data: notify_data
             true
@@ -655,9 +655,9 @@ jQuery ->
             _.head cached_items, collection.page_size*2
         getItemsRemote:(collection, callback)->
             qsa = []
-            url = '/reader/api/0/stream/contents/' + collection.stream
-            url = "var/data/reader_items.json"
-            qsa.push ['stream', collection.stream]
+            url = "#{API_URL}/stream/contents/" + collection.stream
+#             url = "var/data/reader_items.json"
+#             qsa.push ['stream', collection.stream]
 
             qsa.push ['n', collection.page_size]
             qsa.push ['ck', $.now()]
@@ -704,7 +704,7 @@ jQuery ->
                 return
         loadSubscriptionsRemote:(callback)->
             $.ajax
-                #url: "/reader/api/0/subscription/list?ck=#{$.now()}"
+                #url: "#{API_URL}/subscription/list?ck=#{$.now()}"
                 url: "var/data/subscriptions.json?ck=#{$.now()}"
                 type: 'POST'
                 beforeSend: (xhr)->
@@ -744,7 +744,7 @@ jQuery ->
             localStorage.setItem 'item', JSON.stringify(items)
         quickSubscribe: (query, callback)->
             $.ajax
-                url: "/reader/api/0/subscription/quickadd?ck=#{$.now()}"
+                url: "#{API_URL}/subscription/quickadd?ck=#{$.now()}"
                 type: 'POST'
                 data:
                     "quickadd": query
@@ -936,7 +936,7 @@ jQuery ->
             $btn = $(this)
             if $btn.hasClass 'mark'
                 $.ajax
-                    url: "/reader/api/0/mark-all-as-read?ck=#{$.now()}"
+                    url: "#{API_URL}/mark-all-as-read?ck=#{$.now()}"
                     type: 'POST'
                     data:
                         "s": App.indexList.stream
@@ -953,7 +953,7 @@ jQuery ->
         $('.app-toolbar .article_detail.panel').delegate 'button.btn', 'click', ->
             $btn = $(this)
             if $btn.hasClass 'toggle'
-              for state in ['markasread', 'star']
+              for state in ['markasread', 'starred']
                   if $btn.hasClass state
                       App.articleView.model.toggle state
                       break
