@@ -5,12 +5,22 @@ class Et_Core
     {
         spl_autoload_register(array('self', 'autoload'));
     }
+    protected static $autoload_ns_list= array();
+    public static function registerNamespace($ns){
+        self::$autoload_ns_list[]=rtrim($ns, '_').'_';
+    }
     public static function autoload($klass)
     {
         if(substr($klass, 0, 3)=='Et_')
         {
             require dirname(__file__) . '/../' . str_replace('_', '/', $klass) . '.php';
             return true;
+        }
+        foreach(self::$autoload_ns_list as $ns){
+            if(strpos($klass, $ns)===0)
+            {
+                require dirname(__file__) . '/../' . str_replace('_', '/', $klass) . '.php';
+            }
         }
         return false;
     }

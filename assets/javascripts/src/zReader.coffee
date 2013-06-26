@@ -76,6 +76,7 @@ jQuery ->
                         return
                 else
                     App.storage.othersLabel.mergeDelta delta
+            return
         removeLabel:(label)->
             if App.storage.labels.get(label).isLocked()
                 return
@@ -156,7 +157,6 @@ jQuery ->
         state_starred: 'state/starred'
         getFeed:->
             feed = App.storage.feeds.findWhere {id: @get('origin').streamId}
-            console.log feed
             feed
         toggle:(state, is_true)->
             delta = {}
@@ -319,10 +319,15 @@ jQuery ->
             newCategories = @model.get 'categories'
             oldCategories = @model.previous 'categories'
             diff =_.diff oldCategories, newCategories
+            console.log diff
             for added in diff.added
-                @$el.addClass added
+                klass = added.split('/').pop()
+                console.log 'add class', klass
+                @$el.addClass klass
             for removed in diff.removed
-                @$el.removeClass removed
+                klass = removed.split('/').pop()
+                console.log 'remove class', klass
+                @$el.removeClass klass
             return
 
     IndexListView = Backbone.Marionette.CollectionView.extend
@@ -475,7 +480,7 @@ jQuery ->
                     when '***OTHERS***'
                         return 'stream/' + encodeURIComponent 'label/'
                     else
-                        return 'stream/' + encodeURIComponent "label/#{@id}"
+                        return 'stream/' + encodeURIComponent @id
         initialize: ()->
             @collection = @model.get 'feeds'
             return
@@ -522,8 +527,11 @@ jQuery ->
             prettyDate: (time)->
                 _.prettyDate time
             getContent:->
-                if @content && @content.content
-                    return @content.content
+                if @content
+                    if _.isObject(@content) && @content.content
+                        return @content.content
+                    else
+                        return @content
                 if @summary && @summary.content
                     return @summary.content
                 ""
@@ -589,7 +597,7 @@ jQuery ->
                         unless label
                             label = new Label
                                 id: category
-                                title: category
+                                title: category.split('/').splice(1).join('/')
                                 feeds: new FeedList()
                             @labels.add label
                         label.addFeed feed
@@ -655,9 +663,9 @@ jQuery ->
             _.head cached_items, collection.page_size*2
         getItemsRemote:(collection, callback)->
             qsa = []
-            url = "#{API_URL}/stream/contents/" + collection.stream
+            url = "#{API_URL}/stream/contents/"
 #             url = "var/data/reader_items.json"
-#             qsa.push ['stream', collection.stream]
+            qsa.push ['stream', collection.stream]
 
             qsa.push ['n', collection.page_size]
             qsa.push ['ck', $.now()]
@@ -681,7 +689,7 @@ jQuery ->
                     items: @getCachedItems collection
             .done (data)=>
                 itemsAreChanged = false
-                for i, attributes of data
+                for i, attributes of data.payload.articles
                     unless attributes.cached
                         article = new Article attributes
                         @cached_items.add article
@@ -698,20 +706,20 @@ jQuery ->
                                 itemIsChanged = true
                             if itemIsChanged
                                 article.set {categories}
-                collection.continuation = data.continuation if collection
+                collection.continuation = data.payload.continuation if collection
                 @saveItems() if itemsAreChanged
                 callback and callback()
                 return
         loadSubscriptionsRemote:(callback)->
             $.ajax
-                #url: "#{API_URL}/subscription/list?ck=#{$.now()}"
-                url: "var/data/subscriptions.json?ck=#{$.now()}"
+                url: "#{API_URL}/subscription?ck=#{$.now()}"
+#                url: "var/data/subscriptions.json?ck=#{$.now()}"
                 type: 'POST'
                 beforeSend: (xhr)->
                     xhr.overrideMimeType "application/json; charset=UTF-8"
                     return
-            .done (data)=>
-                data = _.map data, (row, i)->
+            .done (response)=>
+                data = _.map response.payload, (row, i)->
                     for field,label of App.stat_fields
                         old_field ="#{field}_count"
                         if _.has row, old_field
@@ -723,7 +731,11 @@ jQuery ->
                 return
             return
         loadSubscriptions:->
-            @feeds.reset JSON.parse localStorage.getItem 'subscriptions'
+            unless typeof(subscriptionData) == 'undefined'
+                @feeds.reset subscriptionData
+                @saveSubscriptions()
+            else
+                @feeds.reset JSON.parse localStorage.getItem 'subscriptions'
         loadItems:->
             @cached_items.reset JSON.parse localStorage.getItem 'item'
         saveSubscriptions:->
@@ -873,6 +885,7 @@ jQuery ->
                 if App.articleView.model
                     App.articleView.model.toggle 'markasread', true
             newArticle = App.storage.getItem id
+            return unless newArticle
             App.articleView = new ArticleView
                 el: '#article-view'
                 model: newArticle
@@ -942,7 +955,18 @@ jQuery ->
                         "s": App.indexList.stream
                         "t": App.indexList.title
                 .done (data)->
-                    console.log data
+                    stream_type = App.indexList.stream.split('/').shift()
+                    if stream_type=='feed'
+                        feed = App.storage.feeds.get App.indexList.stream
+                        feed.set
+                            unread: 0
+                    else if stream_type=='label'
+                        label = App.storage.labels.get App.indexList.stream
+                        label.get('feeds').each (feed)=>
+                            feed.set
+                                unread: 0
+                    else
+                        console.log stream_type
                     return
             else if $btn.hasClass 'filter'
                 for state in ['all', 'unread', 'starred']

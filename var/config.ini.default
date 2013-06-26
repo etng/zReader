@@ -1,6 +1,8 @@
 site_name=MyFeedReader
 [database]
-host=localhost
-dbname=reader
-username=username
-password=password
+adapter=Pdo_Mysql
+params.host=localhost
+params.dbname=reader
+params.username=username
+params.password=password
+params.charset=UTF8

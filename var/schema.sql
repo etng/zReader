@@ -3,7 +3,7 @@
 -- Server version:               5.0.51a-24+lenny5 - (Debian)
 -- Server OS:                    debian-linux-gnu
 -- HeidiSQL version:             7.0.0.4073
--- Date/time:                    2013-06-25 15:23:06
+-- Date/time:                    2013-06-26 12:29:09
 -- --------------------------------------------------------
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS `activity` (
   `id` int(10) unsigned NOT NULL auto_increment COMMENT '编号',
   `member_id` int(10) unsigned NOT NULL COMMENT '用户编号',
   `article_id` int(10) unsigned NOT NULL COMMENT '文章编号',
+  `feed_id` int(10) unsigned NOT NULL COMMENT '种子编号',
   `state_starred` tinyint(1) unsigned NOT NULL default '0' COMMENT '是否星标',
   `state_read` tinyint(1) unsigned NOT NULL default '0' COMMENT '是否已读',
   `state_markasread` tinyint(1) unsigned NOT NULL default '0' COMMENT '是否标记已读',
@@ -24,7 +25,8 @@ CREATE TABLE IF NOT EXISTS `activity` (
   `tags` varchar(512) NOT NULL COMMENT '标签',
   `updated_at` datetime NOT NULL COMMENT '更新时间',
   PRIMARY KEY  (`id`),
-  UNIQUE KEY `member_id_article_id` (`member_id`,`article_id`)
+  UNIQUE KEY `member_id_article_id` (`member_id`,`article_id`),
+  KEY `feed_id` (`feed_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='用户活动记录';
 
 -- Data exporting was unselected.
@@ -36,6 +38,7 @@ CREATE TABLE IF NOT EXISTS `article` (
   `id` int(10) unsigned NOT NULL auto_increment COMMENT '编号',
   `feed_id` int(10) unsigned NOT NULL COMMENT '种子编号',
   `title` varchar(512) NOT NULL COMMENT '标题',
+  `author` varchar(512) NOT NULL COMMENT '作者',
   `content` text NOT NULL COMMENT '内容',
   `origin_url` varchar(512) NOT NULL COMMENT '原始地址',
   `published_at` datetime NOT NULL COMMENT '发布时间',

@@ -32,6 +32,12 @@ class Et_Model extends Zend_Db_Table_Row_Abstract{
 
         return $this;
     }
+    public function increment($field, $delta){
+        $this->refresh();
+        $new_value = $this->$field + $delta;
+        $this->$field = $new_value;
+        return $this;
+    }
     protected function defaults_insert(){
         $defaults= array();
         $fields = array('created_at', 'published_at', 'updated_at');
@@ -101,10 +107,16 @@ class Et_Model extends Zend_Db_Table_Row_Abstract{
     }
     function pluck($fields){
         $data = array();
-        $arg_list = func_get_args();
-        foreach($arg_list as $arg){
-            if($this->_has($arg)){
-                $data[$arg]=$this->$arg;
+        if(func_num_args()>1)
+        {
+            $fields = func_get_args();
+        }
+        foreach($fields as $field=>$alias){
+            if(is_numeric($field)){
+                $field = $alias;
+            }
+            if($this->_has($field)){
+                $data[$alias]=$this->$field;
             }
         }
         return $data;
@@ -148,6 +160,50 @@ abstract class {$name}_Base extends Et_Model{
             return self::create(array_merge(\$keys, \$defaults));
         }
         return \$o;
+    }
+    public static function buildSelect(\$filters=array()){
+        \$select = self::table()->select();
+        foreach(\$filters as \$field=>\$value)
+        {
+            if(is_numeric(\$field)){
+                \$select->where(\$value);
+            }
+            else
+            {
+                if(strpos(\$field, '?')===false)
+                {
+                    \$select->where(\$field . '=?', \$value);
+                }
+                else
+                {
+                    \$select->where(\$field, \$value);
+                }
+            }
+        }
+        return \$select;
+    }
+    public static function count(\$filters=array())
+    {
+        \$select = self::buildSelect(\$filters);
+        \$select->from(self::table(), array('COUNT(1) AS cnt'));
+        \$count = self::table()->fetchRow(\$select);
+        return \$count->cnt;
+    }
+    public static function iterateInStep(\$method, \$filters=array(), \$move=true, \$limit=3000){
+        \$select = self::buildSelect(\$filters);
+        \$offset = 0;
+        @set_time_limit(0);
+        while(true){
+            \$select->limit(\$limit, \$move?\$offset:0);
+            \$offset += \$limit;
+            \$rowset = self::table()->fetchAll(\$select);
+            if(count(\$rowset)==0){
+                break;
+            }
+            foreach(\$rowset as \$row){
+                \$row->\$method();
+            }
+        }
     }
     public static function table(){
         if(!self::\$table){

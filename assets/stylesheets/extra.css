@@ -64,6 +64,12 @@
     background-image: linear-gradient(top,#dd4b39,#d14836);
     */
 }
+.app-toolbar .article_list .active{
+    background-color: #990;
+}
+.app-toolbar .article_list .mark{
+    background-color: #099;
+}
 .app-toolbar .article_detail .btn{
     background-color: #15a;
 }

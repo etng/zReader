@@ -25,31 +25,19 @@ foreach($response['subscriptions'] as $subscription){
     }
     $category_id = current($category_ids);
     $oSubscription = Reader_Subscription::findOrCreate(compact('member_id', 'feed_id'), compact('category_id'));
-
-    $article_defaults = compact('feed_id');
-
-    foreach(glob(BASE_PATH.'/var/data/from_gr/feed/'.urlencode($subscription['id']).'/*.xml.gz') as $article_file)
+    $feed_archive_files = glob(BASE_PATH.'/var/data/from_gr/feed/'.urlencode($subscription['id']).'/*.xml.gz');
+    $logger->debug(count($feed_archive_files) . " file(s) to import");
+    foreach($feed_archive_files as $article_file)
     {
         $xml = gz_get_contents($article_file);
         $logger->debug('loading article collection ' . basename($article_file));
-        $feed = Zend_Feed_Reader::importString($xml);
-        foreach($feed as $entry)
-        {
-            if($entry->getTitle()){
-                $article = Reader_Article::create(array_merge($article_defaults, array(
-                    'title'        => $entry->getTitle(),
-                    'origin_url'         => $entry->getLink(),
-                    'published_at'    => date('Y-m-d H:i:s', strtotime($entry->getDateModified())),
-                    'content'      => $entry->getContent(),
-                )));
-                Reader_Activity::findOrCreate(array(
-                    'article_id'=>$article->id,
-                    'member_id'=>$member->id,
-                ), array(
-                    'state_unread'=>1
-                ));
-            }
+        try{
+            $feed->check($xml);
+        }
+        catch(Exception $e){
+            $logger->debug($e->getMessage());
         }
     }
 }
 $logger->debug('feed importor finished');
+exit(0);

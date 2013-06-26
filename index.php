@@ -15,6 +15,8 @@ require dirname(__file__).'/lib/common.php';
     <link rel="shortcut icon" href="<?php echo ASSETS_URL;?>/ico/favicon.png">
 <script type="text/javascript">
 window.API_URL="<?php echo API_URL;?>";
+var subscriptionData = <?php echo json_encode(current_member()->getSubscriptions());?>;
+var streamData = null;
 </script>
   </head>
 
@@ -53,11 +55,11 @@ window.API_URL="<?php echo API_URL;?>";
     <script type="text/template" id="feed-item-template">
         <i class="icon mute icon-mute <@=getMuteClass()@>"></i>
         <i class="icon more icon-angle-double-right"></i>
-        <span data-url="#<@=getStreamId ()@>" class="title"><span class="txt"><@=title@></span><span class="counter <@=(getCount('unread')=='0'?'':'on')@>">(<@=getCount("unread")@>)</span></span>
+        <span data-url="#<@=getStreamId()@>" class="title"><span class="txt"><@=title@></span><span class="counter <@=(getCount('unread')=='0'?'':'on')@>">(<@=getCount("unread")@>)</span></span>
     </script>
 
     <script type="text/template" id="label-item-template">
-        <li class="label" data-id="<@=getStreamId ()@>">
+        <li class="label" data-id="<@=getStreamId()@>">
             <i class="icon arrow icon-right-open"></i>
             <i class="icon more icon-angle-double-right"></i>
             <span class="title"><@=title@><span class="counter <@=(getCount('unread')=='0'?'':'on')@>">(<@=getCount("unread")@>)</span></span>
@@ -81,7 +83,7 @@ window.API_URL="<?php echo API_URL;?>";
     </script>
 
     <script type="text/template" id="article-template">
-        <article data-id="<@=id@>" class="article-item <@=getItemClass ()@>">
+        <article data-id="<@=id@>" class="article-item <@=getItemClass()@>">
             <div class="article-header">
                 <div class="article-origin">
                     <span data-url="#stream/<@=encodeURIComponent(origin.streamId)@>"><@=origin.title@></span>
@@ -92,13 +94,13 @@ window.API_URL="<?php echo API_URL;?>";
                 <div class="article-meta">
                     <span class="article-time"><@=prettyDate(updated*1000)@></span>
                     <span> - </span>
-                    <span class="article-author"><@=author@></span>
+                    <span class="article-author"><@=author?author:'unknown'@></span>
                 </div>
             </div>
             <div class="article-content">
                 <div class="article-content-inner">
                     <div>
-                        <@=getContent ()@>
+                        <@=getContent()@>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,5 @@
 <?php
 require dirname(__file__).'/lib/common.php';
-$_COOKIE['member_id']  = 1;
 Reader_Api::start();
 class Reader_Api
 {
@@ -10,7 +9,7 @@ class Reader_Api
         $api->handle();
     }
     function handle(){
-        $this->member = Reader_Member::find($_COOKIE['member_id']);
+        $this->member = current_member();
         $status = true;
         $message = 'ok';
         $payload = array();
@@ -30,7 +29,10 @@ class Reader_Api
         exit();
     }
     function markAllAsRead(){
-        return $_POST;
+        $params = array_merge($_GET, $_POST);
+        $stream = $params['s'];
+        $timestamp = $params['ck']/1000;
+        return Reader_Activity::markStreamAsRead($this->member->id, $stream, $timestamp);
     }
     function editTag()
     {
@@ -43,14 +45,26 @@ class Reader_Api
             }
         }
         $activity = Reader_Activity::findOrCreate(array('member_id'=>$this->member->id, 'article_id'=>$id));
-        $activity->state_unread = 1;
         foreach($actions as $action=>$state){
             $field = 'state_'.$state;
             if($action=='a'){
-                $activity->$field = 1;
-                if($state=='read' || $state=='markasread')
+                if($state=='read')
                 {
-                    $activity->state_unread = 0;
+                    if(!$activity->state_markasread)
+                    {
+                        $activity->$field = 1;
+                        $activity->state_unread = 0;
+                    }
+                }
+                else if($state=='markasread'){
+                    if(!$activity->state_read)
+                    {
+                        $activity->$field = 1;
+                        $activity->state_unread = 0;
+                    }
+                }
+                else{
+                    $activity->$field = 1;
                 }
             }
             elseif($action=='r'){
@@ -62,38 +76,51 @@ class Reader_Api
             }
         }
         $activity->save();
+//        var_dump($activity->asCategories());
+//        die();
         return $activity->asCategories();
     }
     function subscription(){
-        $subscriptions = array();
-        foreach(Reader_Subscription::filter(array('member_id'=>$this->member->id)) as $subscription){
-            $categories=array();
-            if($subscription->category_id){
-                $categories[]='label/'.Reader_Category::find(array('member_id'=>$this->member->id, 'id'=>$subscription->category_id))->name;
-            }
-            $feed = Reader_Feed::find($subscription->feed_id);
-            $id = 'feed/' . $feed->feed_url;
-            $subscriptions[]=array_merge($feed->pluck('id', 'feed_url', 'name'), $subscription->pluck('read', 'starred', 'markasread', 'unread'), compact('categories', 'id'));
-        }
-        return $subscriptions;
+        return $this->member->getSubscriptions();
     }
-    function stream($filter='state/unread', $timestamp='', $continuation='', $limit=200){
-        $params[$this->url_segments[1]] = $this->url_segments[2];
-        return array_merge($params, $_GET, $_POST);
+    function stream(){
+        $params = array_merge($_GET, $_POST);
+        $timestamp = $params['ck'];
+        $limit = $params['n'];
+        $continuation = @$params['c'];
+        $filter = @$params['filter'];
+        $stream = @$params['stream'];
         $response = array(
             'continuation'=> '',
+            'params'=> $params,
             'articles'=>array(),
         );
-        $reading_list = Reader_Activity::getStream($stream, $filter, $timestamp, $continuation, $limit);
+        $reading_list = Reader_Activity::getStream($this->member->id, $stream, $filter, $timestamp, $continuation, $limit);
         $response['continuation'] = $reading_list->continuation;
+        $response['debug']=$reading_list->debug;
         foreach($reading_list->activities as $activity){
-            $article  = Reader_Article::find($activity->article_id);
-            $categories = $activities->asCategories();
-            if($article->category_id){
-                $categories[]= 'label/'.Reader_Category::find(array('member_id'=>$this->member->id, 'category_id'=>$article->category_id))->name;
-            }
+            $oArticle  = Reader_Article::find($activity->article_id);
+            $oFeed  = Reader_Feed::find($oArticle->feed_id);
+            $categories = $activity->asCategories();
+            $origin = $oFeed->pluck(array(
+                'name'=>'title',
+                'feed_url'=>'streamId',
+            ));
+            $origin['streamId'] = 'feed/'.$origin['streamId'];
+            $alternate = array(
+                'type'=>'text/html',
+                'href'=>$oArticle->origin_url,
+            );
+            $article = array_merge($oArticle->pluck(array(
+                'id',
+                'content',
+                'title',
+                'author',
+                'published_at'=>'updated',
+            )), compact('categories', 'origin', 'alternate'));
 
-            $response['articles'][]=array_merge($article->toArray(), $extra);
+            $article['updated']=strtotime($article['updated']);
+            $response['articles'][]=$article;
         }
         return $response;
     }

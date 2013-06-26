@@ -100,7 +100,7 @@ jQuery(function() {
     initialize: function() {
       var _this = this;
 
-      return this.on('change', function() {
+      this.on('change', function() {
         var delta, field, label, _ref;
 
         delta = {};
@@ -252,7 +252,6 @@ jQuery(function() {
       feed = App.storage.feeds.findWhere({
         id: this.get('origin').streamId
       });
-      console.log(feed);
       return feed;
     },
     toggle: function(state, is_true) {
@@ -501,20 +500,25 @@ jQuery(function() {
       'change': 'changed'
     },
     changed: function() {
-      var added, diff, newCategories, oldCategories, removed, _i, _j, _len, _len1, _ref, _ref1;
+      var added, diff, klass, newCategories, oldCategories, removed, _i, _j, _len, _len1, _ref, _ref1;
 
       newCategories = this.model.get('categories');
       oldCategories = this.model.previous('categories');
       diff = _.diff(oldCategories, newCategories);
+      console.log(diff);
       _ref = diff.added;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         added = _ref[_i];
-        this.$el.addClass(added);
+        klass = added.split('/').pop();
+        console.log('add class', klass);
+        this.$el.addClass(klass);
       }
       _ref1 = diff.removed;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         removed = _ref1[_j];
-        this.$el.removeClass(removed);
+        klass = removed.split('/').pop();
+        console.log('remove class', klass);
+        this.$el.removeClass(klass);
       }
     }
   });
@@ -718,7 +722,7 @@ jQuery(function() {
           case '***OTHERS***':
             return 'stream/' + encodeURIComponent('label/');
           default:
-            return 'stream/' + encodeURIComponent("label/" + this.id);
+            return 'stream/' + encodeURIComponent(this.id);
         }
       }
     },
@@ -781,8 +785,12 @@ jQuery(function() {
         return _.prettyDate(time);
       },
       getContent: function() {
-        if (this.content && this.content.content) {
-          return this.content.content;
+        if (this.content) {
+          if (_.isObject(this.content) && this.content.content) {
+            return this.content.content;
+          } else {
+            return this.content;
+          }
         }
         if (this.summary && this.summary.content) {
           return this.summary.content;
@@ -874,7 +882,7 @@ jQuery(function() {
             if (!label) {
               label = new Label({
                 id: category,
-                title: category,
+                title: category.split('/').splice(1).join('/'),
                 feeds: new FeedList()
               });
               this.labels.add(label);
@@ -974,7 +982,8 @@ jQuery(function() {
         _this = this;
 
       qsa = [];
-      url = ("" + API_URL + "/stream/contents/") + collection.stream;
+      url = "" + API_URL + "/stream/contents/";
+      qsa.push(['stream', collection.stream]);
       qsa.push(['n', collection.page_size]);
       qsa.push(['ck', $.now()]);
       if (collection.continuation) {
@@ -1001,11 +1010,12 @@ jQuery(function() {
           items: this.getCachedItems(collection)
         })
       }).done(function(data) {
-        var article, attributes, categories, diff, i, itemIsChanged, itemsAreChanged, old_catetories;
+        var article, attributes, categories, diff, i, itemIsChanged, itemsAreChanged, old_catetories, _ref;
 
         itemsAreChanged = false;
-        for (i in data) {
-          attributes = data[i];
+        _ref = data.payload.articles;
+        for (i in _ref) {
+          attributes = _ref[i];
           if (!attributes.cached) {
             article = new Article(attributes);
             _this.cached_items.add(article);
@@ -1032,7 +1042,7 @@ jQuery(function() {
           }
         }
         if (collection) {
-          collection.continuation = data.continuation;
+          collection.continuation = data.payload.continuation;
         }
         if (itemsAreChanged) {
           _this.saveItems();
@@ -1044,13 +1054,15 @@ jQuery(function() {
       var _this = this;
 
       $.ajax({
-        url: "var/data/subscriptions.json?ck=" + ($.now()),
+        url: "" + API_URL + "/subscription?ck=" + ($.now()),
         type: 'POST',
         beforeSend: function(xhr) {
           xhr.overrideMimeType("application/json; charset=UTF-8");
         }
-      }).done(function(data) {
-        data = _.map(data, function(row, i) {
+      }).done(function(response) {
+        var data;
+
+        data = _.map(response.payload, function(row, i) {
           var field, label, old_field, _ref;
 
           _ref = App.stat_fields;
@@ -1069,7 +1081,12 @@ jQuery(function() {
       });
     },
     loadSubscriptions: function() {
-      return this.feeds.reset(JSON.parse(localStorage.getItem('subscriptions')));
+      if (typeof subscriptionData !== 'undefined') {
+        this.feeds.reset(subscriptionData);
+        return this.saveSubscriptions();
+      } else {
+        return this.feeds.reset(JSON.parse(localStorage.getItem('subscriptions')));
+      }
     },
     loadItems: function() {
       return this.cached_items.reset(JSON.parse(localStorage.getItem('item')));
@@ -1259,6 +1276,9 @@ jQuery(function() {
         }
       }
       newArticle = App.storage.getItem(id);
+      if (!newArticle) {
+        return;
+      }
       App.articleView = new ArticleView({
         el: '#article-view',
         model: newArticle
@@ -1357,7 +1377,25 @@ jQuery(function() {
             "t": App.indexList.title
           }
         }).done(function(data) {
-          console.log(data);
+          var feed, label, stream_type,
+            _this = this;
+
+          stream_type = App.indexList.stream.split('/').shift();
+          if (stream_type === 'feed') {
+            feed = App.storage.feeds.get(App.indexList.stream);
+            feed.set({
+              unread: 0
+            });
+          } else if (stream_type === 'label') {
+            label = App.storage.labels.get(App.indexList.stream);
+            label.get('feeds').each(function(feed) {
+              return feed.set({
+                unread: 0
+              });
+            });
+          } else {
+            console.log(stream_type);
+          }
         });
       } else if ($btn.hasClass('filter')) {
         _ref = ['all', 'unread', 'starred'];
