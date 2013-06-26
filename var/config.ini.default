@@ -1,3 +1,4 @@
+site_name=MyFeedReader
 [database]
 host=localhost
 dbname=reader

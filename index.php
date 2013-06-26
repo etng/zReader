@@ -4,7 +4,7 @@ require dirname(__file__).'/lib/common.php';
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>zReader</title>
+    <title><?php echo $config->site_name;?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -23,7 +23,7 @@ window.API_URL="<?php echo API_URL;?>";
         <div class="app-toolbar">
             <div class="feed_list panel">
             <i class="logo"></i>
-            <span class="brand">zReader</span>
+            <span class="brand"><?php echo $config->site_name;?></span>
             </div>
             <div class="article_list panel">
                 <button class="btn mark markasread">Mark All As Read</button>
