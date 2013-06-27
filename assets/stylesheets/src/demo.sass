@@ -1,0 +1,77 @@
+//compass create assets --syntax sass --relative-assets --output-style expanded --no-line-comments
+//mkdir assets/{images,javascripts}
+//tmux new
+//compass watch
+//[ctrl+b] c
+//vim .
+@import compass/reset
+@import compass/typography
+@import compass/layout
+@import compass/utilities
+@import compass/css3
+$font_family: Helvetica, Tahoma, Arial, \5b8b\4f53, sans-serif
+$read_font_height: 1.5
+.article_detail
+  font-family: $font_family
+  font-height: $read_font_height
+  +force-wrap
+@import "icon/icon*.png"
+$main_color: #336699
+@each $icon in enabled, tooltip
+  .icon-#{$icon}
+    @include icon_sprite(icon-#{$icon})
+
+@each $icon in export, feed
+  .icon-#{$icon}
+    @include icon_sprite(icon_#{$icon})
+@mixin wide
+  &.wide
+    width: 80%
+@mixin narrow
+  &.narrow
+    width: 40%
+.copyright
+  font-height: 0.9
+  @include wide
+.module
+  > .head
+    @include border-radius(5px)
+    +ellipsis
+  > .body
+    @include border-radius(6px)
+    line-height: 1.5
+  @include wide
+  @include narrow
+.messagebox
+  @extend .module
+  color: lighten($main_color, 10%)
+  z-index: 9999
+  &.wide
+    width: 80%
+  &.narrow
+    width: 40%
+ul.horiz
+  @include horizontal-list(5px)
+ul
+  +no-bullets
+#footer 
+  color: lighten($main_color, 20%)
+  @include opacity(50)
+  @include sticky-footer(24px)
+#container
+  @include clearfix
+  @include inline-block
+  width: 650px
+  @media screen and (max-width: 320px)
+    width: 300px
+  @media screen and (min-width: 321px) and (max-width: 480px)
+    width: 450px
+  #sidebar
+    height: 700px
+    color: adjust-hue(grayscale($main_color), 180)
+  #content
+    color: adjust-hue(saturate($main_color, 20%), 180)
+    height: 680px
+    @include column-count(2)
+    @include stretch
+
