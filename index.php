@@ -1,5 +1,6 @@
 <?php
 require dirname(__file__).'/lib/common.php';
+$member = current_member();
 ?><!DOCTYPE html>
 <html lang="en">
   <head>
@@ -39,6 +40,12 @@ var streamData = null;
                 <button class="btn goto refresh">Refresh</button>
                 <button class="btn goto next">Next</button>
                 <button class="btn goto prev">Previous</button>
+<span>
+    欢迎<?php echo current_member()->nick_name;?>
+        <img src="<?php echo current_member()->avatar;?>" alt="<?php echo current_member()->oauth_user_name;?>" />
+            <a href="<?php echo BASE_URL_ABS;?>auth.php?action=logout">
+            <img src="<?php echo ASSETS_URL; ?>images/douban_favicon_32x32.png" alt="注销" />注销 </a>
+</span>
             </div>
         </div>
         <div class="app-content">

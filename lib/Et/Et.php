@@ -35,4 +35,4 @@ defined('WEB_ROOT') || define('WEB_ROOT', realpath(LIB_ROOT . '/../'));
 defined('BASE_URL')||define('BASE_URL', str_replace('\\', '/', substr(WEB_ROOT, strlen(realpath($_SERVER['DOCUMENT_ROOT'])))) .'/');
 defined('BASE_URL_ABS') || define('BASE_URL_ABS', @"http://{$_SERVER['HTTP_HOST']}" . BASE_URL);
 defined('ASSETS_ROOT') || define('ASSETS_ROOT',  realpath(WEB_ROOT . '/assets/'));
-defined('ASSETS_URL') || define('ASSETS_URL', BASE_URL. 'assets');
+defined('ASSETS_URL') || define('ASSETS_URL', BASE_URL. 'assets/');

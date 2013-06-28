@@ -6,3 +6,9 @@ params.dbname=reader
 params.username=username
 params.password=password
 params.charset=UTF8
+[douban]
+api_key=
+api_secret=
+api_scope=douban_basic_common,book_basic_r,book_basic_w
+redirect_url=BASE_URL_ABS "auth.php/done/douban"
+state=reader_view

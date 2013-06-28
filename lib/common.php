@@ -55,8 +55,46 @@ function gz_get_contents($filename)
 function current_member(){
     static $current_member;
     if(!$current_member){
-        $_COOKIE['member_id']  = 1;
-         $current_member = Reader_Member::find($_COOKIE['member_id']);
+        try{
+        if(empty($_COOKIE['mid'])){
+            throw new Exception("login first please");
+        }
+         $current_member = Reader_Member::find($_COOKIE['mid']);
+        if(!$current_member){
+            throw new Exception("no such member");
+        }
+        }
+        catch(Exception $e){
+            $_SESSION['notice'] = $e->getMessage();
+            header('location:' . BASE_URL_ABS . 'auth.php');
+            die();
+        }
     }
     return $current_member;
+}
+
+function addCookie($name, $value, $lifetime=7200, $path='/', $domain='', $http_only=1, $secure=0)
+{
+    if(!$domain){
+        $domain = $_SERVER['HTTP_HOST'];
+    }
+    @setcookie($name, $value, time()+$lifetime,$path,$domain, $secure, $http_only);
+}
+function removeCookie($name, $path='/', $domain='', $http_only=1, $secure=0)
+{
+    if(!$domain){
+        $domain = $_SERVER['HTTP_HOST'];
+    }
+    @setcookie($name, null, time()-8640000,$path,$domain, $secure, $http_only);
+}
+function array_pick($array, $keys){
+    $d_arr = array();
+    foreach($keys as $alias=>$field){
+        if(is_numeric($alias)){
+            $alias = $field;
+        }
+        var_dump($alias, $field);
+        $d_arr[$alias]=$array[$field];
+    }
+    return $d_arr;
 }
