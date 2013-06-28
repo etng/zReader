@@ -76,8 +76,8 @@ class Reader_Api
             }
         }
         $activity->save();
-//        var_dump($activity->asCategories());
-//        die();
+        //        var_dump($activity->asCategories());
+        //        die();
         return $activity->asCategories();
     }
     function subscription(){

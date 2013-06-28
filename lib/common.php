@@ -36,7 +36,7 @@ $frontendOptions = array(
     'lifetime' => 86400,
     'automatic_serialization' => true
 );
-$backendOptions = array('cache_dir' => BASE_PATH . '/var/tmp/');
+$backendOptions = array('cache_dir' => BASE_PATH . '/var/cache/');
 $cache = Zend_Cache::factory(
     'Core', 'File', $frontendOptions, $backendOptions
 );

@@ -21,11 +21,13 @@ class Reader_Feed extends Reader_Feed_Base{
             {
                 if($entry->getTitle()){
                     $authors = array();
-                    foreach($entry->getAuthors() as $oAuthor){
-                        foreach(array('name', 'email') as $key){
-                            if(!empty($oAuthor[$key])){
-                                $authors[]=$oAuthor[$key];
-                                break;
+                    if($entry->getAuthors()){
+                        foreach($entry->getAuthors() as $oAuthor){
+                            foreach(array('name', 'email') as $key){
+                                if(!empty($oAuthor[$key])){
+                                    $authors[]=$oAuthor[$key];
+                                    break;
+                                }
                             }
                         }
                     }

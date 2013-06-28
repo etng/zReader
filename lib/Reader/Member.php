@@ -14,16 +14,16 @@ class Reader_Member extends Reader_Member_Base{
             $feed = Reader_Feed::find($subscription->feed_id);
             $id = 'feed/' . $feed->feed_url;
             $subscriptions[]=array_merge($feed->pluck(array(
-                    'id',
-                    'feed_url',
-                    'name'=>'title'
-                )),
-                array_map('intval', $subscription->pluck(array(
-                    'read',
-                    'starred',
-                    'markasread',
-                    'unread'
-                ))), compact('categories', 'id'));
+                'id',
+                'feed_url',
+                'name'=>'title'
+            )),
+            array_map('intval', $subscription->pluck(array(
+                'read',
+                'starred',
+                'markasread',
+                'unread'
+            ))), compact('categories', 'id'));
         }
         return $subscriptions;
     }

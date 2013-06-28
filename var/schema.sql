@@ -3,7 +3,7 @@
 -- Server version:               5.0.51a-24+lenny5 - (Debian)
 -- Server OS:                    debian-linux-gnu
 -- HeidiSQL version:             7.0.0.4073
--- Date/time:                    2013-06-26 12:29:09
+-- Date/time:                    2013-06-28 15:26:20
 -- --------------------------------------------------------
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -84,7 +84,8 @@ CREATE TABLE IF NOT EXISTS `feed` (
   `created_at` datetime NOT NULL COMMENT '加入时间',
   `notified_at` datetime NOT NULL COMMENT '通知更新时间',
   PRIMARY KEY  (`id`),
-  KEY `is_private` (`is_private`)
+  KEY `is_private` (`is_private`),
+  KEY `feed_url` (`feed_url`(333))
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='种子';
 
 -- Data exporting was unselected.
@@ -114,9 +115,15 @@ CREATE TABLE IF NOT EXISTS `history` (
 DROP TABLE IF EXISTS `member`;
 CREATE TABLE IF NOT EXISTS `member` (
   `id` int(10) unsigned NOT NULL auto_increment COMMENT '编号',
+  `oauth_server` varchar(50) default NULL COMMENT 'OAuth 服务器',
+  `oauth_access_token` varchar(100) default NULL COMMENT 'OAuth 请求Token',
+  `oauth_user_name` varchar(100) default NULL COMMENT 'OAuth 用户名',
+  `oauth_user_id` int(10) unsigned default NULL COMMENT 'OAuth 用户ID',
   `email` varchar(100) NOT NULL COMMENT 'Email',
   `password_digest` char(32) NOT NULL COMMENT '密码摘要',
   `nick_name` varchar(100) NOT NULL COMMENT '昵称',
+  `avatar` varchar(100) NOT NULL COMMENT '头像',
+  `signature` varchar(100) NOT NULL COMMENT '签名',
   `bio` varchar(512) NOT NULL COMMENT '备注',
   `created_at` datetime NOT NULL COMMENT '加入时间',
   `updated_at` datetime NOT NULL COMMENT '更新时间',
@@ -144,6 +151,7 @@ CREATE TABLE IF NOT EXISTS `subscription` (
   `sort_method` enum('newest','oldest','magic') NOT NULL default 'magic' COMMENT '展示时排序方式',
   `created_at` datetime NOT NULL COMMENT '订阅时间',
   `updated_at` datetime NOT NULL COMMENT '更新时间',
+  `inited_at` datetime NOT NULL COMMENT '初始化时间',
   `suspended_at` datetime NOT NULL COMMENT '退订时间',
   PRIMARY KEY  (`id`),
   KEY `member_id_is_suspended_category_id` (`member_id`,`is_suspended`,`category_id`)

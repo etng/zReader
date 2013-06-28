@@ -24,7 +24,7 @@ class Reader_Subscription extends Reader_Subscription_Base{
                 'category_id'=>$oCategory?$oCategory->id:0
             ));
             // it will slow the script down, make a background script to do it
-//            $subscription->initActivities();
+            //            $subscription->initActivities();
             $i++;
         }
         return $i;
@@ -32,14 +32,18 @@ class Reader_Subscription extends Reader_Subscription_Base{
     function getArticleIds(){
         $db = Reader_Article::table()->getAdapter();
         $sql = "SELECT
-                    id
-                FROM
-                    article
-                WHERE
-                    feed_id={$this->id}
-                    AND updated_at<='{$this->created_at}'
-                ";
-        return $db->fetchCol($sql);
+            id
+            FROM
+            article
+            WHERE
+            feed_id={$this->feed_id}
+            AND updated_at<='{$this->created_at}'
+            ";
+        $ids = $db->fetchCol($sql);
+        if(!$ids){
+            echo $sql . PHP_EOL;
+        }
+        return $ids;
     }
     function initActivities(){
         $i=0;

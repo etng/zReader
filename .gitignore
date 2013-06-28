@@ -4,6 +4,7 @@
 *.log
 
 var/data/*
+var/cache/*
 var/tmp/*
 var/log/*
 var/uploads/*

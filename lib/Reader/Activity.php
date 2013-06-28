@@ -32,9 +32,9 @@ class Reader_Activity extends Reader_Activity_Base{
         else if($stream_type=='label'){
             $category_id = 0;
             if(!empty($stream_id)){
-                 $oCategory = Reader_Category::find(array('name'=>$stream_id));
+                $oCategory = Reader_Category::find(array('name'=>$stream_id));
                 if($oCategory){
-                     $category_id = $oCategory->id;
+                    $category_id = $oCategory->id;
                 }
             }
             $filters['feed_id IN (?)'] = Reader_Subscription::table()->getAdapter()->fetchCol('select feed_id from subscription where category_id='.$category_id);
@@ -43,10 +43,9 @@ class Reader_Activity extends Reader_Activity_Base{
                 'member_id'=>$member_id,
                 'category_id'=>$category_id,
             ));
-
         }
         else{
-             var_dump($stream_type, $stream_id);die();
+            var_dump($stream_type, $stream_id);die();
         }
         return true;
     }
@@ -78,9 +77,9 @@ class Reader_Activity extends Reader_Activity_Base{
             {
                 $category_id = 0;
                 if(!empty($stream_id)){
-                     $oCategory = Reader_Category::find(array('name'=>$stream_id));
+                    $oCategory = Reader_Category::find(array('name'=>$stream_id));
                     if($oCategory){
-                         $category_id = $oCategory->id;
+                        $category_id = $oCategory->id;
                     }
                 }
                 $db = self::table()->getAdapter();
@@ -100,7 +99,7 @@ class Reader_Activity extends Reader_Activity_Base{
             }
         }
         else{
-//            $select->where('state_unread=?', 1);
+            //            $select->where('state_unread=?', 1);
         }
         $select->where('updated_at<?', date('Y-m-d H:i:s', $timestamp/1000));
         if($continuation){

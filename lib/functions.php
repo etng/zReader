@@ -9,13 +9,13 @@ function current_member($redirect=false){
     static $current_member;
     if(!$current_member){
         try{
-        if(empty($_COOKIE['mid'])){
-            throw new Exception("login first please");
-        }
-         $current_member = Reader_Member::find($_COOKIE['mid']);
-        if(!$current_member){
-            throw new Exception("no such member");
-        }
+            if(empty($_COOKIE['mid'])){
+                throw new Exception("login first please");
+            }
+            $current_member = Reader_Member::find($_COOKIE['mid']);
+            if(!$current_member){
+                throw new Exception("no such member");
+            }
         }
         catch(Exception $e){
             $_SESSION['notice'] = $e->getMessage();

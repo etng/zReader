@@ -91,15 +91,15 @@ class Et_Model extends Zend_Db_Table_Row_Abstract{
     }
     function on($event, $callback){
         if(!isset($this->events[$event])){
-             $this->events[$event] = array();
+            $this->events[$event] = array();
         }
         $this->events[$event][]=$callback;
     }
     function trigger($event, $data=array()){
         if(isset($this->events[$event])){
-             foreach($this->events[$event] as $callback){
+            foreach($this->events[$event] as $callback){
                 call_user_func_array($callback, $data);
-             }
+            }
         }
     }
     function toJSON(){

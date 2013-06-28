@@ -66,12 +66,12 @@ class Et_OPML
                 $site_url = (string)$child['htmlUrl'];
                 if($feed_url)
                 {
-                $items[]= (object)compact(
-                    'path',
-                    'name',
-                    'feed_url',
-                    'site_url'
-                );
+                    $items[]= (object)compact(
+                        'path',
+                        'name',
+                        'feed_url',
+                        'site_url'
+                    );
                 }
             }
         }
