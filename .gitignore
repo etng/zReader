@@ -6,4 +6,5 @@
 var/data/*
 var/tmp/*
 var/log/*
+var/uploads/*
 var/config.ini
